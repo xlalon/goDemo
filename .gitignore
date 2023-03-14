@@ -1,0 +1,15 @@
+.idea/
+*.ipr
+*.iml
+*.iws
+*.swp
+
+# system ignore
+.DS_Store
+
+# project
+*.cert
+*.key
+.test
+iprepo.txt
+cmd/*/config.yaml
