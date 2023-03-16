@@ -3,6 +3,7 @@ package domain
 import "github.com/xlalon/golee/pkg/math/decimal"
 
 type DepositDTO struct {
+	Id         int64           `json:"id"`
 	Chain      string          `json:"chain"`
 	Asset      string          `json:"asset"`
 	TxHash     string          `json:"tx_hash"`

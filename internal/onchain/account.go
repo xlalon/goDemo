@@ -5,10 +5,10 @@ import "github.com/xlalon/golee/pkg/math/decimal"
 type Label string
 
 const (
-	AccountDeposit  Label = "deposit"
-	AccountHot            = "hot"
-	AccountExternal       = "external"
-	AccountUnknown        = "unknown"
+	AccountDeposit  Label = "DEPOSIT"
+	AccountHot            = "HOT"
+	AccountExternal       = "EXTERNAL"
+	AccountUnknown        = "UNKNOWN"
 )
 
 type Account struct {

@@ -65,10 +65,10 @@ func (w *Waxp) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
 }
 
 func (w *Waxp) ScanTxn(xxx interface{}) ([]*onchain.Transaction, error) {
-	return w.GetTxnByAccount(xxx.(*onchain.Account))
+	return w.ScanTxnByAccount(xxx.(*onchain.Account))
 }
 
-func (w *Waxp) GetTxnByAccount(account *onchain.Account) ([]*onchain.Transaction, error) {
+func (w *Waxp) ScanTxnByAccount(account *onchain.Account) ([]*onchain.Transaction, error) {
 
 	var transfers []*onchain.Transaction
 

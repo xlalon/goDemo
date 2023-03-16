@@ -1,9 +1,10 @@
 package dao
 
 import (
-	"github.com/xlalon/golee/internal/service/wallet/conf"
+	"github.com/xlalon/golee/internal/service/chain/conf"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Dao struct {
@@ -12,7 +13,7 @@ type Dao struct {
 
 func New(conf *conf.Config) (d *Dao) {
 
-	mysqlDb, err := gorm.Open(mysql.Open(conf.Mysql.DNS), &gorm.Config{})
+	mysqlDb, err := gorm.Open(mysql.Open(conf.Mysql.DNS), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 	if err != nil {
 		panic(err)
 	}

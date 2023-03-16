@@ -4,44 +4,61 @@ import (
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/internal/service/chain/conf"
 	"github.com/xlalon/golee/internal/service/chain/domain"
-	"github.com/xlalon/golee/internal/service/chain/repository"
-	"github.com/xlalon/golee/internal/service/chain/repository/dao"
+	"github.com/xlalon/golee/internal/service/chain/repoimpl/dao"
 )
 
 type Service struct {
-	repo       repository.ChainRepository
+	chainRepo  domain.ChainRepository
 	onchainSvc *onchain.Service
 }
 
 func NewService(conf *conf.Config) *Service {
 	return &Service{
-		repo:       dao.New(conf),
+		chainRepo:  dao.New(conf),
 		onchainSvc: onchain.NewService(),
 	}
 }
 
+func (s *Service) NewChain(chainDTO *domain.ChainDTO) {
+	var assets []*domain.Asset
+	for _, assetDTO := range chainDTO.Assets {
+		assets = append(assets, domain.AssetFactory(assetDTO))
+	}
+	s.chainRepo.Save(domain.ChainFactory(chainDTO, assets))
+}
+
+func (s *Service) AddAsset(chainCode string, assetDTO *domain.AssetDTO) (*domain.ChainDTO, error) {
+	chain, err := s.chainRepo.GetChainByCode(chainCode)
+	if err != nil {
+		return nil, err
+	}
+	chain.AddAsset(domain.AssetFactory(assetDTO))
+	s.chainRepo.Save(chain)
+	return s.chainDMToDTO(s.chainRepo.GetChainByCode(chainCode))
+}
+
 func (s *Service) GetChains() ([]*domain.ChainDTO, error) {
-	return s.chainsDMToDTO(s.repo.GetChains())
+	return s.chainsDMToDTO(s.chainRepo.GetChains())
 }
 
 func (s *Service) GetChainByCode(chainCode string) (*domain.ChainDTO, error) {
-	return s.chainDMToDTO(s.repo.GetChainByCode(chainCode))
+	return s.chainDMToDTO(s.chainRepo.GetChainByCode(chainCode))
 }
 
 func (s *Service) GetAssetsByChain(chainCode string) ([]*domain.AssetDTO, error) {
-	return s.assetsDMToDTOs(s.repo.GetAssetsByChain(chainCode))
+	return s.assetsDMToDTOs(s.chainRepo.GetAssetsByChain(chainCode))
 }
 
 func (s *Service) GetAssets() ([]*domain.AssetDTO, error) {
-	return s.assetsDMToDTOs(s.repo.GetAssets())
+	return s.assetsDMToDTOs(s.chainRepo.GetAssets())
 }
 
 func (s *Service) GetAssetByIdentity(chainCode, identity string) (*domain.AssetDTO, error) {
-	return s.assetDMToDTO(s.repo.GetAssetByIdentity(chainCode, identity))
+	return s.assetDMToDTO(s.chainRepo.GetAssetByIdentity(chainCode, identity))
 }
 
 func (s *Service) GetChainByAsset(assetCode string) (*domain.ChainDTO, error) {
-	return s.chainDMToDTO(s.repo.GetChainByAsset(assetCode))
+	return s.chainDMToDTO(s.chainRepo.GetChainByAsset(assetCode))
 }
 
 func (s *Service) GetChainLatestHeight(chainCode string) (int64, error) {

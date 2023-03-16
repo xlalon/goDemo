@@ -8,14 +8,13 @@ import (
 	chainConf "github.com/xlalon/golee/internal/service/chain/conf"
 	"github.com/xlalon/golee/internal/service/deposit/conf"
 	"github.com/xlalon/golee/internal/service/deposit/domain"
-	"github.com/xlalon/golee/internal/service/deposit/repository"
-	"github.com/xlalon/golee/internal/service/deposit/repository/dao"
+	"github.com/xlalon/golee/internal/service/deposit/repoimpl/dao"
 	"github.com/xlalon/golee/internal/service/wallet"
 	walletConf "github.com/xlalon/golee/internal/service/wallet/conf"
 )
 
 type Service struct {
-	depositRepo repository.DepositRepository
+	depositRepo domain.DepositRepository
 	onchainSvc  *onchain.Service
 	chainSvc    *chain.Service
 	walletSvc   *wallet.Service
@@ -36,15 +35,15 @@ func NewService(conf *conf.Config) *Service {
 	}
 }
 
-func (s *Service) NewDeposit(dto *domain.DepositDTO) error {
-	if !dto.Amount.GreaterThanOrEqualZero() {
+func (s *Service) NewDeposit(depDTO *domain.DepositDTO) error {
+	if !depDTO.Amount.GreaterThanOrEqualZero() {
 		return errors.New("amount should greater than 0")
 	}
-	return s.depositRepo.CreateDeposit(dto)
+	return s.depositRepo.Save(domain.DepositFactory(depDTO))
 }
 
-func (s *Service) GetDeposit(id int64) (*domain.DepositDTO, error) {
-	return s.depositDMToDTO(s.depositRepo.GetDepositById(id))
+func (s *Service) GetDeposit(depositId int64) (*domain.DepositDTO, error) {
+	return s.depositDMToDTO(s.depositRepo.GetDepositById(depositId))
 }
 
 func (s *Service) GetDeposits() ([]*domain.DepositDTO, error) {

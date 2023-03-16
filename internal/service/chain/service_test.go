@@ -1,18 +1,14 @@
 package chain
 
 import (
-	"fmt"
-	"testing"
-
 	"github.com/xlalon/golee/internal/service/chain/conf"
 	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/database/redis"
-	"github.com/xlalon/golee/pkg/json"
 )
 
 var (
 	testConf = &conf.Config{
-		Mysql: &mysql.Config{DNS: "mycat:p123456@tcp(127.0.0.1:8066)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"},
+		Mysql: &mysql.Config{DNS: "mycat:p123456@tcp(127.0.0.1:3306)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"},
 		Redis: &redis.Config{
 			Address:  "127.0.0.1",
 			Port:     6379,
@@ -20,34 +16,51 @@ var (
 			DB:       0,
 		},
 	}
+	testSvc = NewService(testConf)
 )
 
-//func TestChain_Save(t *testing.T) {
-//	c := &model.Chain{
-//		Code: "WAX",
-//		Name: "Worldwide Asset eXchange",
+//func TestService_NewChain(t *testing.T) {
+//	chain := &domain.ChainDTO{
+//		Id:     6627923918848,
+//		Code:   "BTC",
+//		Name:   "BTC",
+//		Status: string(domain.ChainStatusOnline),
+//		Assets: []*domain.AssetDTO{{
+//			Id:         mysql.NextID(),
+//			Code:       "BTC2",
+//			Name:       "BTC2",
+//			Chain:      "BTC",
+//			Identity:   "btc2",
+//			Precession: 8,
+//			Status:     string(domain.ChainStatusOnline),
+//		},
+//			{
+//				Id:         6627986571266,
+//				Code:       "BTC3",
+//				Name:       "BTC3",
+//				Chain:      "BTC",
+//				Identity:   "btc3",
+//				Precession: 8,
+//				Status:     string(domain.ChainStatusOnline),
+//			}},
 //	}
-//	chain := InitChain(c, testConf)
-//	err := chain.Save()
-//	if err != nil {
-//		fmt.Println("err", err)
-//	}
+//	json.PPrint("chain", chain)
+//	testSvc.NewChain(chain)
 //}
 
-func TestChain_GetAssets(t *testing.T) {
-	svc := NewService(testConf)
-	assets, err := svc.GetAssets()
-	if err != nil {
-		fmt.Println("err", err)
-	}
-	json.PPrint("assets", assets)
-}
-
-//func TestChain_GetLatestHeight(t *testing.T) {
-//	c := &model.Chain{
-//		Code: "BAND",
-//		Name: "Band",
+//func TestService_GetChains(t *testing.T) {
+//	chains, err := testSvc.GetChains()
+//	if err != nil {
+//		fmt.Println("GetChains err", err)
 //	}
-//	chain := InitChain(c, testConf)
-//	fmt.Println("height", chain.GetLatestHeight())
+//	json.PPrint("chains", chains)
+//
+//}
+//
+//func TestService_GetAssets(t *testing.T) {
+//	assets, err := testSvc.GetAssets()
+//	if err != nil {
+//		fmt.Println("GetAssets err", err)
+//	}
+//	json.PPrint("assets", assets)
 //}

@@ -53,7 +53,7 @@ func (af *AccountFilter) Satisfied(deps []*domain.Deposit) ([]*domain.Deposit, e
 			chainAddressesSelf[chainCode] = make(map[string]bool)
 		}
 		for _, account := range accounts {
-			chainAddressesSelf[chainCode][account.GetAddress()] = true
+			chainAddressesSelf[chainCode][account.Address] = true
 		}
 	}
 	// filter deps that receiver not our account

@@ -66,7 +66,7 @@ func TestBand_NewAccount(t *testing.T) {
 }
 
 func TestBand_GetAccount(t *testing.T) {
-	acct, err := testBand.GetAccount("band1ggq8us6lh4c8hr4624xnrlud6q5lqhklakysnd")
+	acct, err := testBand.GetAccount("band1dkl8wga94803qygwdspwa5kxdfyjpt8zr0uzh9")
 	if err != nil {
 		fmt.Println("error:", err)
 	}

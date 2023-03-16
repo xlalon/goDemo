@@ -63,10 +63,10 @@ func (b *Band) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
 }
 
 func (b *Band) ScanTxn(xxx interface{}) ([]*onchain.Transaction, error) {
-	return b.GetTxnByBlock(xxx)
+	return b.ScanTxnByBlock(xxx)
 }
 
-func (b *Band) GetTxnByBlock(heightOrHash interface{}) ([]*onchain.Transaction, error) {
+func (b *Band) ScanTxnByBlock(heightOrHash interface{}) ([]*onchain.Transaction, error) {
 
 	var transfers []*onchain.Transaction
 	height := heightOrHash.(int64)

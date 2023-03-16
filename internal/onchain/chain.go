@@ -26,12 +26,12 @@ type Chainer interface {
 	WalletInterface
 }
 
-type ScanTransfersByBlock interface {
-	GetTxnByBlock(heightOrHash interface{}) ([]*Transaction, error)
+type ScanTxnByBlock interface {
+	ScanTxnByBlock(heightOrHash interface{}) ([]*Transaction, error)
 }
 
-type ScanTransfersByAccount interface {
-	GetTxnByAccount(*Account) ([]*Transaction, error)
+type ScanTxnByAccount interface {
+	ScanTxnByAccount(*Account) ([]*Transaction, error)
 }
 
 type Code string

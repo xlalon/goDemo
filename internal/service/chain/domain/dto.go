@@ -1,13 +1,15 @@
 package domain
 
 type ChainDTO struct {
-	Code   string   `json:"code"`
-	Name   string   `json:"name"`
-	Status string   `json:"status"`
-	Assets []*Asset `json:"assets"`
+	Id     int64       `json:"id"`
+	Code   string      `json:"code"`
+	Name   string      `json:"name"`
+	Status string      `json:"status"`
+	Assets []*AssetDTO `json:"assets"`
 }
 
 type AssetDTO struct {
+	Id         int64  `json:"id"`
 	Code       string `json:"code"`
 	Name       string `json:"name"`
 	Chain      string `json:"chain"`

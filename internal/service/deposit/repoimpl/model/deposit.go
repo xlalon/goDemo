@@ -1,13 +1,12 @@
 package model
 
 import (
-	"gorm.io/gorm"
-
+	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
 type Deposit struct {
-	gorm.Model
+	mysql.Model
 
 	Chain     string
 	Asset     string

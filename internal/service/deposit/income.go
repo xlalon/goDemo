@@ -7,14 +7,13 @@ import (
 	"github.com/xlalon/golee/internal/service/chain"
 	"github.com/xlalon/golee/internal/service/deposit/conf"
 	"github.com/xlalon/golee/internal/service/deposit/domain"
-	"github.com/xlalon/golee/internal/service/deposit/repository"
-	"github.com/xlalon/golee/internal/service/deposit/repository/dao"
+	"github.com/xlalon/golee/internal/service/deposit/repoimpl/dao"
 	"github.com/xlalon/golee/internal/service/wallet"
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
 type Income struct {
-	repo       repository.DepositRepository
+	repo       domain.DepositRepository
 	onchainSvc *onchain.Service
 	chainSvc   *chain.Service
 	walletSvc  *wallet.Service
@@ -61,29 +60,39 @@ func (i *Income) scanDeposits(chainCode string, xxx interface{}) ([]*domain.Depo
 		return deps, err
 	}
 
+	assets, err := i.chainSvc.GetAssetsByChain(chainCode)
+	if err != nil {
+		return nil, err
+	}
+	aITOCodePrecession := make(map[string][2]interface{})
+	for _, asset := range assets {
+		aITOCodePrecession[asset.Identity] = [2]interface{}{asset.Code, asset.Precession}
+	}
+
 	for _, txn := range txs {
-		asset, err1 := i.chainSvc.GetAssetByIdentity(string(txn.Chain), txn.Identity)
-		if asset == nil || err1 != nil {
+		var assetCodePrecession [2]interface{}
+		assetCodePrecession, ok = aITOCodePrecession[txn.Identity]
+		if !ok {
 			continue
 		}
-		amount := domain.NewAmountVO(txn.Identity, txn.Amount, asset.Precession, decimal.Decimal{}).ToAmount()
+		precession, _ := assetCodePrecession[1].(int64)
+		amount := domain.NewAmountVO(txn.Identity, txn.Amount, precession, decimal.Decimal{}).ToAmount()
 		depDTO := &domain.DepositDTO{
 			Chain:      string(txn.Chain),
-			Asset:      asset.Code,
+			Asset:      assetCodePrecession[0].(string),
 			TxHash:     txn.TxHash,
 			Sender:     txn.Sender,
 			Receiver:   txn.Receiver,
 			Memo:       txn.Memo,
 			Identity:   txn.Identity,
 			AmountRaw:  txn.Amount,
-			Precession: asset.Precession,
+			Precession: precession,
 			Amount:     amount,
 			VOut:       txn.VOut,
+			Status:     domain.DepositStatusPending,
 		}
 
-		dep := domain.NewDeposit(0, *domain.NewDepositItem(depDTO), domain.DepositStatusPending)
-
-		deps = append(deps, dep)
+		deps = append(deps, domain.DepositFactory(depDTO))
 	}
 
 	return deps, nil
@@ -108,22 +117,7 @@ func (i *Income) filterDeposits(deps []*domain.Deposit) ([]*domain.Deposit, erro
 
 func (i *Income) saveDeposits(deps []*domain.Deposit) error {
 	for _, dep := range deps {
-		err := i.repo.CreateDeposit(
-			&domain.DepositDTO{
-				Chain:     dep.GetChain(),
-				Asset:     dep.GetAsset(),
-				TxHash:    dep.GetTxHash(),
-				Sender:    dep.GetSender(),
-				Receiver:  dep.GetReceiver(),
-				Memo:      dep.GetMemo(),
-				Identity:  dep.GetIdentity(),
-				Amount:    dep.GetAmount(),
-				AmountRaw: dep.GetAmountRaw(),
-				VOut:      dep.GetVOut(),
-				Status:    dep.GetStatus(),
-			},
-		)
-		if err != nil {
+		if err := i.repo.Save(dep); err != nil {
 			return err
 		}
 	}

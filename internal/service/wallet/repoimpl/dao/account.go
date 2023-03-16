@@ -1,18 +1,50 @@
 package dao
 
 import (
+	"time"
+	
 	"github.com/xlalon/golee/internal/service/wallet/domain"
-	"github.com/xlalon/golee/internal/service/wallet/repository/model"
+	"github.com/xlalon/golee/internal/service/wallet/repoimpl/model"
+	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) NewAccount(acct *domain.Account) error {
-	return d.db.Create(&model.Account{
-		Chain:   acct.Chain,
-		Address: acct.Address,
-		Label:   acct.Label,
-		Memo:    acct.Memo,
-		Status:  acct.Status,
-	}).Error
+func (d *Dao) Save(acct *domain.Account) error {
+	var createAt = time.Time{}
+	var version int64
+	acctDB, err := d.getAccountById(acct.GetId())
+	if err == nil && acctDB != nil {
+		createAt = acctDB.CreatedAt
+		version = acctDB.Version + 1
+	}
+	d.db.Model(&model.Account{Model: mysql.Model{ID: acct.GetId()}}).Save(&model.Account{
+		Model: mysql.Model{
+			ID:        acct.GetId(),
+			CreatedAt: createAt,
+		},
+		Chain:   acct.GetChain(),
+		Address: acct.GetAddress(),
+		Label:   acct.GetLabel(),
+		Memo:    acct.GetMemo(),
+		Status:  acct.GetStatus(),
+		Version: version,
+	})
+	return nil
+}
+
+func (d *Dao) GetAccountById(accountId int64) (*domain.Account, error) {
+	acctDB, err := d.getAccountById(accountId)
+	if err != nil {
+		return nil, err
+	}
+	return d.acctDbToDomain(acctDB), nil
+}
+
+func (d *Dao) getAccountById(accountId int64) (*model.Account, error) {
+	acctDB := &model.Account{}
+	if err := d.db.Last(acctDB, "id = ?", accountId).Error; err != nil {
+		return nil, err
+	}
+	return acctDB, nil
 }
 
 func (d *Dao) GetAccountByChainAddress(chain, address string) (*domain.Account, error) {
@@ -57,13 +89,12 @@ func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*
 }
 
 func (d *Dao) acctDbToDomain(acct *model.Account) *domain.Account {
-	return &domain.Account{
-		Chain:    acct.Chain,
-		Address:  acct.Address,
-		Label:    acct.Label,
-		Memo:     acct.Memo,
-		Status:   acct.Status,
-		Sequence: 0,
-		Balances: nil,
-	}
+	return domain.AccountFactory(&domain.AccountDTO{
+		Id:      acct.ID,
+		Chain:   acct.Chain,
+		Address: acct.Address,
+		Label:   acct.Label,
+		Memo:    acct.Memo,
+		Status:  acct.Status,
+	})
 }

@@ -11,11 +11,12 @@ type Deposit struct {
 	Status Status
 }
 
-func NewDeposit(id int64, detail DepositItem, status Status) *Deposit {
+func DepositFactory(dto *DepositDTO) *Deposit {
 	return &Deposit{
-		Id:          id,
-		DepositItem: detail,
-		Status:      status,
+		Id: dto.Id,
+
+		DepositItem: *NewDepositItem(dto),
+		Status:      dto.Status,
 	}
 }
 

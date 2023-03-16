@@ -49,14 +49,14 @@
 
 ---
 
-| package   | desc                |
-|-----------|---------------------|
-| admin     | admin background    |
-| interface | public interface    |
-| job       | crontab             |
-| onchain   | onchain ACL         |
-| service   | domain rpc services |
-| pkg       | infra               |
+| package   | desc                                |
+|-----------|-------------------------------------|
+| admin     | admin background                    |
+| interface | public interface                    |
+| job       | crontab                             |
+| onchain   | onchain ACL                         |
+| service   | rpc service(domain bounded context) |
+| pkg       | utils                               |
 
 ## Run Service
 

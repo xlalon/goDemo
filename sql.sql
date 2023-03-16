@@ -1,6 +1,6 @@
 
--- CREATE TABLE IF NOT EXISTS `chains` (
--- 	`id` int NOT NULL AUTO_INCREMENT COMMENT 'id',
+-- CREATE TABLE IF NOT EXISTS `go_demo`.`chains` (
+-- 	`id` bigint NOT NULL AUTO_INCREMENT COMMENT 'id',
 -- 	`code` varchar(64) NOT NULL COMMENT '公链编号',
 -- 	`name` varchar(64) NOT NULL COMMENT '公链名称',
 -- 	`status` varchar(64) NOT NULL COMMENT '状态',
@@ -12,12 +12,12 @@
 -- ) ENGINE = InnoDB CHARSET = utf8mb4 COMMENT '公链表'
 
 
--- CREATE TABLE IF NOT EXISTS `assets` (
--- 	`id` int NOT NULL AUTO_INCREMENT COMMENT 'id',
+-- CREATE TABLE IF NOT EXISTS `go_demo`.`assets` (
+-- 	`id` bigint NOT NULL AUTO_INCREMENT COMMENT 'id',
 -- 	`code` varchar(64) NOT NULL COMMENT '资产编号',
 -- 	`name` varchar(64) NOT NULL COMMENT '资产名称',
 -- 	`chain_code` varchar(64) NOT NULL COMMENT '公链编号',
--- 	`identity` varchar(64) NOT NULL COMMENT '公链身份证',
+-- 	`identity` varchar(64) NOT NULL COMMENT '资产身份证',
 -- 	`precision` int NOT NULL COMMENT '资产精度',
 -- 	`status` varchar(64) NOT NULL COMMENT '状态',
 -- 	`created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -25,7 +25,7 @@
 -- 	`deleted_at` datetime DEFAULT NULL COMMENT '删除时间',
 -- 	PRIMARY KEY (`id`),
 -- 	UNIQUE KEY `chain_identity` (`chain_code`, `identity`)
--- ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT '资产信息表'
+-- ) ENGINE = InnoDB CHARSET = utf8mb4 COMMENT '资产信息表'
 
 
 -- CREATE TABLE IF NOT EXISTS `accounts` (
@@ -45,7 +45,7 @@
 -- TBPARTITION BY mod_hash(chain) TBPARTITIONS 10
 
 
--- CREATE TABLE IF NOT EXISTS `deposits` (
+-- CREATE TABLE IF NOT EXISTS `go_demo`.`deposits` (
 -- 	`id` bigint NOT NULL AUTO_INCREMENT COMMENT 'id',
 -- 	`chain` varchar(64) NOT NULL COMMENT '公链编号',
 -- 	`asset` varchar(64) NOT NULL COMMENT '资产编号',
@@ -66,4 +66,5 @@
 -- 	PRIMARY KEY (`id`),
 -- 	UNIQUE KEY `chain_asset_tx` (`chain`, `asset`, `tx_hash`, `sender`, `receiver`, `memo`, `amount`, `v_out`),
 -- 	KEY `tx_hash` (`tx_hash`)
--- ) ENGINE = InnoDB CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT '充值表'
+-- ) ENGINE = InnoDB CHARSET = utf8mb4 COMMENT '充值表'
+-- TBPARTITION BY mod_hash(tx_hash) TBPARTITIONS 10
