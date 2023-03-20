@@ -1,22 +1,17 @@
 package service
 
 import (
-	"github.com/xlalon/golee/internal/interface/conf"
 	"github.com/xlalon/golee/internal/service/wallet"
-	walletConf "github.com/xlalon/golee/internal/service/wallet/conf"
+	"github.com/xlalon/golee/internal/service/wallet/domain"
 )
 
 type AccountService struct {
 	walletSvc *wallet.Service
 }
 
-func NewAccountService(conf *conf.Config) *AccountService {
+func NewAccountService(walletRepo domain.WalletRepository) *AccountService {
 	return &AccountService{
-		walletSvc: wallet.NewService(
-			&walletConf.Config{
-				Mysql: conf.Mysql,
-				Redis: conf.Redis,
-			}),
+		walletSvc: wallet.NewService(walletRepo),
 	}
 }
 

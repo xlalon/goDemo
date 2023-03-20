@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/xlalon/golee/internal/onchain"
+	"github.com/xlalon/golee/internal/infra/repository"
+	"github.com/xlalon/golee/internal/infra/repository/chain"
+	"github.com/xlalon/golee/internal/infra/repository/deposit"
+	rwallet "github.com/xlalon/golee/internal/infra/repository/wallet"
 	onchainConf "github.com/xlalon/golee/internal/onchain/conf"
 	"github.com/xlalon/golee/internal/onchain/x"
 	chainSvc "github.com/xlalon/golee/internal/service/chain"
-	chainConf "github.com/xlalon/golee/internal/service/chain/conf"
-	"github.com/xlalon/golee/internal/service/deposit/conf"
 	"github.com/xlalon/golee/internal/service/wallet"
-	walletConf "github.com/xlalon/golee/internal/service/wallet/conf"
 	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/database/redis"
 )
 
 var (
-	testOnchainConf = &onchainConf.Config{
+	_ = x.Init(&onchainConf.Config{
 		Band: &onchainConf.ChainConfig{
 			NodeUrl:           "https://api-bandchain-ia.cosmosia.notional.ventures/",
 			ExternalNodeUrl:   "https://api-bandchain-ia.cosmosia.notional.ventures/",
@@ -40,37 +40,32 @@ var (
 			DepositAddress:    "",
 			HotAddress:        "",
 		},
-	}
-	_ = x.Init(testOnchainConf)
+	})
 
-	testIncomeConf = &conf.Config{
-		Mysql: &mysql.Config{DNS: "mycat:p123456@tcp(127.0.0.1:8066)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"},
-		Redis: &redis.Config{
-			Address:  "127.0.0.1",
-			Port:     6379,
-			Password: "",
-			DB:       0,
-		},
+	testMysqlConf = &mysql.Config{DNS: "root:Xiao0000@tcp(127.0.0.1:3306)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"}
+	testRedisConf = &redis.Config{
+		Address:  "127.0.0.1",
+		Port:     6379,
+		Password: "",
+		DB:       0,
 	}
-	testChainConf = &chainConf.Config{
-		Mysql: &mysql.Config{DNS: "mycat:p123456@tcp(127.0.0.1:8066)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"},
-		Redis: &redis.Config{
-			Address:  "127.0.0.1",
-			Port:     6379,
-			Password: "",
-			DB:       0,
+
+	testRepository = repository.NewRegistry(&repository.Config{
+		Chain: &chain.Config{
+			Mysql: testMysqlConf,
+			Redis: testRedisConf,
 		},
-	}
-	testWalletConf = &walletConf.Config{
-		Mysql: &mysql.Config{DNS: "mycat:p123456@tcp(127.0.0.1:8066)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"},
-		Redis: &redis.Config{
-			Address:  "127.0.0.1",
-			Port:     6379,
-			Password: "",
-			DB:       0,
+		Deposit: &deposit.Config{
+			Mysql: testMysqlConf,
+			Redis: testRedisConf,
 		},
-	}
-	testIncome = NewIncome(testIncomeConf, onchain.NewService(), chainSvc.NewService(testChainConf), wallet.NewService(testWalletConf))
+		Wallet: &rwallet.Config{
+			Mysql: testMysqlConf,
+			Redis: testRedisConf,
+		},
+	})
+
+	testIncome = NewIncome(testRepository.DepositRepository(), chainSvc.NewService(testRepository.ChainRepository()), wallet.NewService(testRepository.WalletRepository()))
 )
 
 func TestService_ScanDeposits(t *testing.T) {

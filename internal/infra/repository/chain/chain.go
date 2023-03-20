@@ -1,10 +1,9 @@
-package dao
+package chain
 
 import (
+	"github.com/xlalon/golee/internal/service/chain/domain"
 	"time"
 
-	"github.com/xlalon/golee/internal/service/chain/domain"
-	"github.com/xlalon/golee/internal/service/chain/repoimpl/model"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
@@ -15,8 +14,8 @@ func (d *Dao) Save(chainDM *domain.Chain) error {
 	if err == nil && chainDB != nil {
 		createAt = chainDB.CreatedAt
 	}
-	d.db.Model(&model.Chain{Model: mysql.Model{ID: chainDM.GetId()}}).Save(
-		&model.Chain{
+	d.db.Model(&Chain{Model: mysql.Model{ID: chainDM.GetId()}}).Save(
+		&Chain{
 			Model: mysql.Model{
 				ID:        chainDM.GetId(),
 				CreatedAt: createAt,
@@ -30,7 +29,7 @@ func (d *Dao) Save(chainDM *domain.Chain) error {
 	for _, assetDMUpdated := range chainDM.GetAssets() {
 		assetIdDMUpdated[assetDMUpdated.GetId()] = assetDMUpdated
 	}
-	var assetsDb []model.Asset
+	var assetsDb []Asset
 	assetsDb, err = d.getAssetsByChain(chainDM.GetCode())
 	if err != nil {
 		return err
@@ -38,14 +37,14 @@ func (d *Dao) Save(chainDM *domain.Chain) error {
 	assetDBCI := make(map[int64]time.Time)
 	for _, assetDb := range assetsDb {
 		if _, ok := assetIdDMUpdated[assetDb.ID]; !ok {
-			d.db.Delete(&model.Asset{}, assetDb.ID)
+			d.db.Delete(&Asset{}, assetDb.ID)
 			delete(assetIdDMUpdated, assetDb.ID)
 		} else {
 			assetDBCI[assetDb.ID] = assetDb.CreatedAt
 		}
 	}
 	for assetId, assetUpdated := range assetIdDMUpdated {
-		d.db.Model(&model.Asset{Model: mysql.Model{ID: assetId}}).Save(&model.Asset{
+		d.db.Model(&Asset{Model: mysql.Model{ID: assetId}}).Save(&Asset{
 			Model: mysql.Model{
 				ID:        assetId,
 				CreatedAt: assetDBCI[assetId],
@@ -63,7 +62,7 @@ func (d *Dao) Save(chainDM *domain.Chain) error {
 }
 
 func (d *Dao) GetChains() ([]*domain.Chain, error) {
-	var chainsDB []model.Chain
+	var chainsDB []Chain
 	if err := d.db.Find(&chainsDB).Error; err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func (d *Dao) GetChains() ([]*domain.Chain, error) {
 }
 
 func (d *Dao) GetChainByCode(chainCode string) (*domain.Chain, error) {
-	chainDB := &model.Chain{}
+	chainDB := &Chain{}
 	if err := d.db.Last(chainDB, "code = ?", chainCode).Error; err != nil {
 		return nil, err
 	}
@@ -98,21 +97,21 @@ func (d *Dao) GetChainByAsset(assetCode string) (*domain.Chain, error) {
 	return d.GetChainByCode(assetDM.GetChain())
 }
 
-func (d *Dao) getChainById(chainId int64) (*model.Chain, error) {
-	chainDB := &model.Chain{}
+func (d *Dao) getChainById(chainId int64) (*Chain, error) {
+	chainDB := &Chain{}
 	if err := d.db.Last(chainDB, "id = ?", chainId).Error; err != nil {
 		return nil, err
 	}
 	return chainDB, nil
 }
 
-func (d *Dao) chainDbToDomain(chain *model.Chain, assets []*domain.Asset) *domain.Chain {
+func (d *Dao) chainDbToDomain(c *Chain, assets []*domain.Asset) *domain.Chain {
 	return domain.ChainFactory(
 		&domain.ChainDTO{
-			Id:     chain.ID,
-			Code:   chain.Code,
-			Name:   chain.Name,
-			Status: chain.Status,
+			Id:     c.ID,
+			Code:   c.Code,
+			Name:   c.Name,
+			Status: c.Status,
 			Assets: nil,
 		},
 		assets,

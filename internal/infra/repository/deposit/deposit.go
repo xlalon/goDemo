@@ -1,10 +1,9 @@
-package dao
+package deposit
 
 import (
+	"github.com/xlalon/golee/internal/service/deposit/domain"
 	"time"
 
-	"github.com/xlalon/golee/internal/service/deposit/domain"
-	"github.com/xlalon/golee/internal/service/deposit/repoimpl/model"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
@@ -16,7 +15,7 @@ func (d *Dao) Save(dep *domain.Deposit) error {
 		createAt = depositDB.CreatedAt
 		version = depositDB.Version + 1
 	}
-	d.db.Model(&model.Deposit{Model: mysql.Model{ID: dep.GetId()}}).Save(&model.Deposit{
+	d.db.Model(&Deposit{Model: mysql.Model{ID: dep.GetId()}}).Save(&Deposit{
 		Model: mysql.Model{
 			ID:        dep.GetId(),
 			CreatedAt: createAt,
@@ -47,7 +46,7 @@ func (d *Dao) GetDepositById(id int64) (*domain.Deposit, error) {
 }
 
 func (d *Dao) GetDeposits() ([]*domain.Deposit, error) {
-	var depsDB []model.Deposit
+	var depsDB []Deposit
 	if err := d.db.Find(&depsDB).Error; err != nil {
 		return nil, err
 	}
@@ -58,15 +57,15 @@ func (d *Dao) GetDeposits() ([]*domain.Deposit, error) {
 	return deps, nil
 }
 
-func (d *Dao) getDepositById(id int64) (*model.Deposit, error) {
-	depDB := &model.Deposit{}
+func (d *Dao) getDepositById(id int64) (*Deposit, error) {
+	depDB := &Deposit{}
 	if err := d.db.First(depDB, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return depDB, nil
 }
 
-func (d *Dao) depositDbToDomain(dep *model.Deposit) *domain.Deposit {
+func (d *Dao) depositDbToDomain(dep *Deposit) *domain.Deposit {
 	return domain.DepositFactory(&domain.DepositDTO{
 		Id:        dep.ID,
 		Chain:     dep.Chain,

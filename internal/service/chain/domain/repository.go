@@ -1,6 +1,10 @@
 package domain
 
+import "github.com/xlalon/golee/pkg/database/mysql"
+
 type ChainRepository interface {
+	mysql.IdGeneratorRepository
+
 	Save(*Chain) error
 	GetChains() ([]*Chain, error)
 	GetChainByCode(chainCode string) (*Chain, error)

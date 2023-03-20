@@ -1,10 +1,9 @@
-package dao
+package wallet
 
 import (
-	"time"
-	
 	"github.com/xlalon/golee/internal/service/wallet/domain"
-	"github.com/xlalon/golee/internal/service/wallet/repoimpl/model"
+	"time"
+
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
@@ -16,7 +15,7 @@ func (d *Dao) Save(acct *domain.Account) error {
 		createAt = acctDB.CreatedAt
 		version = acctDB.Version + 1
 	}
-	d.db.Model(&model.Account{Model: mysql.Model{ID: acct.GetId()}}).Save(&model.Account{
+	d.db.Model(&Account{Model: mysql.Model{ID: acct.GetId()}}).Save(&Account{
 		Model: mysql.Model{
 			ID:        acct.GetId(),
 			CreatedAt: createAt,
@@ -39,8 +38,8 @@ func (d *Dao) GetAccountById(accountId int64) (*domain.Account, error) {
 	return d.acctDbToDomain(acctDB), nil
 }
 
-func (d *Dao) getAccountById(accountId int64) (*model.Account, error) {
-	acctDB := &model.Account{}
+func (d *Dao) getAccountById(accountId int64) (*Account, error) {
+	acctDB := &Account{}
 	if err := d.db.Last(acctDB, "id = ?", accountId).Error; err != nil {
 		return nil, err
 	}
@@ -48,7 +47,7 @@ func (d *Dao) getAccountById(accountId int64) (*model.Account, error) {
 }
 
 func (d *Dao) GetAccountByChainAddress(chain, address string) (*domain.Account, error) {
-	acctDB := &model.Account{}
+	acctDB := &Account{}
 	if err := d.db.Last(acctDB, "chain = ? AND address = ?", chain, address).Error; err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func (d *Dao) GetAccountByChainAddress(chain, address string) (*domain.Account, 
 }
 
 func (d *Dao) GetAccountByChainAddressMemo(chain, address, memo string) (*domain.Account, error) {
-	acctDB := &model.Account{}
+	acctDB := &Account{}
 	if err := d.db.Last(acctDB, "chain = ? AND address = ? AND memo = ?", chain, address, memo).Error; err != nil {
 		return nil, err
 	}
@@ -65,7 +64,7 @@ func (d *Dao) GetAccountByChainAddressMemo(chain, address, memo string) (*domain
 }
 
 func (d *Dao) GetAccountsByChain(chain string) ([]*domain.Account, error) {
-	var accountsDB []model.Account
+	var accountsDB []Account
 	if err := d.db.Find(&accountsDB, "chain = ?", chain).Error; err != nil {
 		return nil, err
 	}
@@ -77,7 +76,7 @@ func (d *Dao) GetAccountsByChain(chain string) ([]*domain.Account, error) {
 }
 
 func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*domain.Account, error) {
-	var accountsDB []model.Account
+	var accountsDB []Account
 	if err := d.db.Find(&accountsDB, "chain = ? AND address in ?", chain, addresses).Error; err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*
 	return accounts, nil
 }
 
-func (d *Dao) acctDbToDomain(acct *model.Account) *domain.Account {
+func (d *Dao) acctDbToDomain(acct *Account) *domain.Account {
 	return domain.AccountFactory(&domain.AccountDTO{
 		Id:      acct.ID,
 		Chain:   acct.Chain,

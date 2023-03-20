@@ -1,21 +1,17 @@
 package chain
 
 import (
-	"github.com/xlalon/golee/internal/job/conf"
 	"github.com/xlalon/golee/internal/service/chain"
-	chainConf "github.com/xlalon/golee/internal/service/chain/conf"
+	"github.com/xlalon/golee/internal/service/chain/domain"
 )
 
 type Chain struct {
 	chainSvc *chain.Service
 }
 
-func NewChain(conf *conf.Config) *Chain {
+func NewChain(chainRepo domain.ChainRepository) *Chain {
 	return &Chain{
-		chainSvc: chain.NewService(&chainConf.Config{
-			Mysql: conf.Mysql,
-			Redis: conf.Redis,
-		}),
+		chainSvc: chain.NewService(chainRepo),
 	}
 }
 

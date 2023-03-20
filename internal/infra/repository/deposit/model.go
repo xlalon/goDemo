@@ -1,4 +1,4 @@
-package model
+package deposit
 
 import (
 	"github.com/xlalon/golee/pkg/database/mysql"

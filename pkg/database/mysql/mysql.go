@@ -15,3 +15,7 @@ type Model struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
+
+type IdGeneratorRepository interface {
+	NextId() int64
+}

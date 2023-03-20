@@ -2,9 +2,7 @@ package wallet
 
 import (
 	"github.com/xlalon/golee/internal/onchain"
-	"github.com/xlalon/golee/internal/service/wallet/conf"
 	"github.com/xlalon/golee/internal/service/wallet/domain"
-	"github.com/xlalon/golee/internal/service/wallet/repoimpl/dao"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
@@ -13,9 +11,9 @@ type Service struct {
 	onchainSvc *onchain.Service
 }
 
-func NewService(conf *conf.Config) *Service {
+func NewService(walletRepo domain.WalletRepository) *Service {
 	return &Service{
-		walletRepo: dao.New(conf),
+		walletRepo: walletRepo,
 		onchainSvc: onchain.NewService(),
 	}
 }

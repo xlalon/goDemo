@@ -1,11 +1,14 @@
 package wallet
 
 import (
+	"github.com/xlalon/golee/internal/infra/repository"
+	"github.com/xlalon/golee/internal/infra/repository/wallet"
 	onchainConf "github.com/xlalon/golee/internal/onchain/conf"
 	"github.com/xlalon/golee/internal/onchain/x"
-	"github.com/xlalon/golee/internal/service/wallet/conf"
+	"github.com/xlalon/golee/internal/service/wallet/domain"
 	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/database/redis"
+	"testing"
 )
 
 var (
@@ -33,36 +36,33 @@ var (
 			HotAddress:        "",
 		},
 	}
-	_ = x.Init(testOnchainConf)
+	_             = x.Init(testOnchainConf)
+	testMysqlConf = &mysql.Config{DNS: "root:Xiao0000@tcp(127.0.0.1:3306)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"}
+	testRedisConf = &redis.Config{
+		Address:  "127.0.0.1",
+		Port:     6379,
+		Password: "",
+		DB:       0,
+	}
 
-	testConf = &conf.Config{
-		Mysql: &mysql.Config{DNS: "mycat:p123456@tcp(127.0.0.1:3306)/go_demo?charset=utf8mb4&parseTime=True&loc=Local"},
-		Redis: &redis.Config{
-			Address:  "127.0.0.1",
-			Port:     6379,
-			Password: "",
-			DB:       0,
+	testConf = &repository.Config{
+		Wallet: &wallet.Config{
+			Mysql: testMysqlConf,
+			Redis: testRedisConf,
 		},
 	}
-	testSvc = NewService(testConf)
+	testRepository = repository.NewRegistry(testConf)
+	testSvc        = NewService(testRepository.WalletRepository())
 )
 
-//func TestService_NewAccount(t *testing.T) {
-//	acct, err := testSvc.NewAccount("BAND", "DEPOSIT")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	json.PPrint("new account", acct)
-//}
-
-//func TestService_GetAccount(t *testing.T) {
-//	acct := domain.AccountFactory(&domain.AccountDTO{
-//		Id:      6627670032386,
-//		Chain:   "BAND",
-//		Address: "band1ggq8us6lh4c8hr4624xnrlud6q5lqhklakysnd",
-//		Memo:    "614322816608",
-//		Label:   "HOT",
-//		Status:  "VALID",
-//	})
-//	_ = testSvc.walletRepo.Save(acct)
-//}
+func TestService_NewAccount(t *testing.T) {
+	acct := domain.AccountFactory(&domain.AccountDTO{
+		Id:      mysql.NextID(),
+		Chain:   "BAND",
+		Address: "band1dkl8wga94803qygwdspwa5kxdfyjpt8zr0uzh9",
+		Memo:    "714322816608",
+		Label:   "DEPOSIT",
+		Status:  "VALID",
+	})
+	_ = testSvc.walletRepo.Save(acct)
+}

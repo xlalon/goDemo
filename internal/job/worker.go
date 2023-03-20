@@ -1,6 +1,7 @@
 package job
 
 import (
+	"github.com/xlalon/golee/internal/infra/repository"
 	"github.com/xlalon/golee/internal/job/conf"
 	"github.com/xlalon/golee/internal/job/scheduler/chain"
 	"github.com/xlalon/golee/internal/onchain/x"
@@ -9,6 +10,8 @@ import (
 
 var (
 	chainScd *chain.Chain
+
+	repo *repository.Registry
 )
 
 func Init(server *worker.Server, conf *conf.Config) error {
@@ -18,7 +21,8 @@ func Init(server *worker.Server, conf *conf.Config) error {
 
 func initScd(conf *conf.Config) {
 	_ = x.Init(conf.Chain)
-	chainScd = chain.NewChain(conf)
+	repo = repository.NewRegistry(conf.Repository)
+	chainScd = chain.NewChain(repo)
 }
 
 func registerTask(server *worker.Server) error {

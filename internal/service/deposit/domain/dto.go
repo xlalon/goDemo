@@ -1,6 +1,8 @@
 package domain
 
-import "github.com/xlalon/golee/pkg/math/decimal"
+import (
+	"github.com/xlalon/golee/pkg/math/decimal"
+)
 
 type DepositDTO struct {
 	Id         int64           `json:"id"`

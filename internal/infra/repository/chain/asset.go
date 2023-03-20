@@ -1,12 +1,11 @@
-package dao
+package chain
 
 import (
 	"github.com/xlalon/golee/internal/service/chain/domain"
-	"github.com/xlalon/golee/internal/service/chain/repoimpl/model"
 )
 
 func (d *Dao) GetAssets() ([]*domain.Asset, error) {
-	var assetsDB []model.Asset
+	var assetsDB []Asset
 	if err := d.db.Find(&assetsDB).Error; err != nil {
 		return nil, err
 	}
@@ -18,7 +17,7 @@ func (d *Dao) GetAssets() ([]*domain.Asset, error) {
 }
 
 func (d *Dao) GetAssetByCode(assetCode string) (*domain.Asset, error) {
-	assetDB := &model.Asset{}
+	assetDB := &Asset{}
 	if err := d.db.Last(assetDB, "code = ?", assetCode).Error; err != nil {
 		return nil, err
 	}
@@ -26,7 +25,7 @@ func (d *Dao) GetAssetByCode(assetCode string) (*domain.Asset, error) {
 }
 
 func (d *Dao) GetAssetByIdentity(chainCode, identity string) (*domain.Asset, error) {
-	assetDB := &model.Asset{}
+	assetDB := &Asset{}
 	if err := d.db.Last(assetDB, "chain_code = ? AND identity = ?", chainCode, identity).Error; err != nil {
 		return nil, err
 	}
@@ -45,23 +44,23 @@ func (d *Dao) GetAssetsByChain(chainCode string) ([]*domain.Asset, error) {
 	return assetsDM, nil
 }
 
-func (d *Dao) getAssetsByChain(chainCode string) ([]model.Asset, error) {
-	var assetsDB []model.Asset
+func (d *Dao) getAssetsByChain(chainCode string) ([]Asset, error) {
+	var assetsDB []Asset
 	if err := d.db.Find(&assetsDB, "chain_code = ?", chainCode).Error; err != nil {
 		return nil, err
 	}
 	return assetsDB, nil
 }
 
-func (d *Dao) getAssetById(assetId int64) (*model.Asset, error) {
-	assetDB := &model.Asset{}
+func (d *Dao) getAssetById(assetId int64) (*Asset, error) {
+	assetDB := &Asset{}
 	if err := d.db.Last(assetDB, "id = ?", assetId).Error; err != nil {
 		return nil, err
 	}
 	return assetDB, nil
 }
 
-func (d *Dao) assetDbToDomain(a *model.Asset) *domain.Asset {
+func (d *Dao) assetDbToDomain(a *Asset) *domain.Asset {
 	return domain.AssetFactory(
 		&domain.AssetDTO{
 			Id:         a.ID,

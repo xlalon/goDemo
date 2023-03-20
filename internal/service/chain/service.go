@@ -2,9 +2,7 @@ package chain
 
 import (
 	"github.com/xlalon/golee/internal/onchain"
-	"github.com/xlalon/golee/internal/service/chain/conf"
 	"github.com/xlalon/golee/internal/service/chain/domain"
-	"github.com/xlalon/golee/internal/service/chain/repoimpl/dao"
 )
 
 type Service struct {
@@ -12,9 +10,9 @@ type Service struct {
 	onchainSvc *onchain.Service
 }
 
-func NewService(conf *conf.Config) *Service {
+func NewService(chainRepo domain.ChainRepository) *Service {
 	return &Service{
-		chainRepo:  dao.New(conf),
+		chainRepo:  chainRepo,
 		onchainSvc: onchain.NewService(),
 	}
 }

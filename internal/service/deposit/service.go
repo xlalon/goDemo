@@ -2,15 +2,11 @@ package deposit
 
 import (
 	"errors"
+	"github.com/xlalon/golee/internal/service/deposit/domain"
 
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/internal/service/chain"
-	chainConf "github.com/xlalon/golee/internal/service/chain/conf"
-	"github.com/xlalon/golee/internal/service/deposit/conf"
-	"github.com/xlalon/golee/internal/service/deposit/domain"
-	"github.com/xlalon/golee/internal/service/deposit/repoimpl/dao"
 	"github.com/xlalon/golee/internal/service/wallet"
-	walletConf "github.com/xlalon/golee/internal/service/wallet/conf"
 )
 
 type Service struct {
@@ -20,18 +16,12 @@ type Service struct {
 	walletSvc   *wallet.Service
 }
 
-func NewService(conf *conf.Config) *Service {
+func NewService(depositRepo domain.DepositRepository, chainSvc *chain.Service, walletSvc *wallet.Service) *Service {
 	return &Service{
-		depositRepo: dao.New(conf),
+		depositRepo: depositRepo,
 		onchainSvc:  onchain.NewService(),
-		chainSvc: chain.NewService(&chainConf.Config{
-			Mysql: conf.Mysql,
-			Redis: conf.Redis,
-		}),
-		walletSvc: wallet.NewService(&walletConf.Config{
-			Mysql: conf.Mysql,
-			Redis: conf.Redis,
-		}),
+		chainSvc:    chainSvc,
+		walletSvc:   walletSvc,
 	}
 }
 

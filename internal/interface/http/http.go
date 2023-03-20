@@ -1,9 +1,12 @@
 package http
 
 import (
+	"github.com/xlalon/golee/internal/infra/repository"
 	"github.com/xlalon/golee/internal/interface/conf"
 	"github.com/xlalon/golee/internal/interface/service"
 	"github.com/xlalon/golee/internal/onchain/x"
+	"github.com/xlalon/golee/internal/service/chain"
+	"github.com/xlalon/golee/internal/service/wallet"
 	"github.com/xlalon/golee/pkg/net/http/server"
 )
 
@@ -11,6 +14,10 @@ var (
 	accountSvc *service.AccountService
 	chainSvc   *service.ChainService
 	depositSvc *service.DepositService
+
+	repo      *repository.Registry
+	walletSvc *wallet.Service
+	chainSVC  *chain.Service
 )
 
 var (
@@ -48,7 +55,12 @@ func registerRouter(r *server.Engine) {
 
 func initServices(conf *conf.Config) {
 	_ = x.Init(conf.Chain)
-	chainSvc = service.NewChainService(conf)
-	depositSvc = service.NewDepositService(conf)
-	accountSvc = service.NewAccountService(conf)
+
+	repo = repository.NewRegistry(conf.Repository)
+	chainSVC = chain.NewService(repo.ChainRepository())
+	walletSvc = wallet.NewService(repo.WalletRepository())
+
+	chainSvc = service.NewChainService(repo.ChainRepository())
+	depositSvc = service.NewDepositService(repo.DepositRepository(), chainSVC, walletSvc)
+	accountSvc = service.NewAccountService(repo.WalletRepository())
 }

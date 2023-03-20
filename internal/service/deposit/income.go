@@ -5,9 +5,7 @@ import (
 
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/internal/service/chain"
-	"github.com/xlalon/golee/internal/service/deposit/conf"
 	"github.com/xlalon/golee/internal/service/deposit/domain"
-	"github.com/xlalon/golee/internal/service/deposit/repoimpl/dao"
 	"github.com/xlalon/golee/internal/service/wallet"
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
@@ -19,10 +17,10 @@ type Income struct {
 	walletSvc  *wallet.Service
 }
 
-func NewIncome(conf *conf.Config, onchainSvc *onchain.Service, chainSvc *chain.Service, walletSvc *wallet.Service) *Income {
+func NewIncome(repo domain.DepositRepository, chainSvc *chain.Service, walletSvc *wallet.Service) *Income {
 	return &Income{
-		repo:       dao.New(conf),
-		onchainSvc: onchainSvc,
+		repo:       repo,
+		onchainSvc: onchain.NewService(),
 		chainSvc:   chainSvc,
 		walletSvc:  walletSvc,
 	}
