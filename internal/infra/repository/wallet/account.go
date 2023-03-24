@@ -1,41 +1,53 @@
 package wallet
 
 import (
-	"github.com/xlalon/golee/internal/service/wallet/domain"
 	"time"
 
+	"github.com/xlalon/golee/internal/domain/wallet/model"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) Save(acct *domain.Account) error {
-	var createAt = time.Time{}
+func (d *Dao) Save(acct *model.Account) error {
+	var createdAt time.Time
 	var version int64
-	acctDB, err := d.getAccountById(acct.GetId())
+	acctDB, err := d.getAccountById(acct.Id())
 	if err == nil && acctDB != nil {
-		createAt = acctDB.CreatedAt
+		createdAt = acctDB.CreatedAt
 		version = acctDB.Version + 1
 	}
-	d.db.Model(&Account{Model: mysql.Model{ID: acct.GetId()}}).Save(&Account{
+	d.db.Model(&Account{Model: mysql.Model{ID: acct.Id()}}).Save(&Account{
 		Model: mysql.Model{
-			ID:        acct.GetId(),
-			CreatedAt: createAt,
+			ID:        acct.Id(),
+			CreatedAt: createdAt,
 		},
-		Chain:   acct.GetChain(),
-		Address: acct.GetAddress(),
-		Label:   acct.GetLabel(),
-		Memo:    acct.GetMemo(),
-		Status:  acct.GetStatus(),
+		Chain:   acct.Chain(),
+		Address: acct.Address(),
+		Label:   acct.Label(),
+		Memo:    acct.Memo(),
+		Status:  acct.Status(),
 		Version: version,
 	})
 	return nil
 }
 
-func (d *Dao) GetAccountById(accountId int64) (*domain.Account, error) {
-	acctDB, err := d.getAccountById(accountId)
-	if err != nil {
-		return nil, err
-	}
-	return d.acctDbToDomain(acctDB), nil
+func (d *Dao) GetAccountById(accountId int64) (*model.Account, error) {
+	return d.acctDbToDomain(d.getAccountById(accountId))
+}
+
+func (d *Dao) GetAccountByChainAddress(chain, address string) (*model.Account, error) {
+	return d.acctDbToDomain(d.getAccountByChainAddress(chain, address))
+}
+
+func (d *Dao) GetAccountByChainAddressMemo(chain, address, memo string) (*model.Account, error) {
+	return d.acctDbToDomain(d.getAccountByChainAddressMemo(chain, address, memo))
+}
+
+func (d *Dao) GetAccountsByChain(chain string) ([]*model.Account, error) {
+	return d.accountsDbToDomain(d.getAccountsByChain(chain))
+}
+
+func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*model.Account, error) {
+	return d.accountsDbToDomain(d.getAccountsByChainAddresses(chain, addresses))
 }
 
 func (d *Dao) getAccountById(accountId int64) (*Account, error) {
@@ -46,54 +58,62 @@ func (d *Dao) getAccountById(accountId int64) (*Account, error) {
 	return acctDB, nil
 }
 
-func (d *Dao) GetAccountByChainAddress(chain, address string) (*domain.Account, error) {
+func (d *Dao) getAccountByChainAddress(chain, address string) (*Account, error) {
 	acctDB := &Account{}
 	if err := d.db.Last(acctDB, "chain = ? AND address = ?", chain, address).Error; err != nil {
 		return nil, err
 	}
-	return d.acctDbToDomain(acctDB), nil
+	return acctDB, nil
 }
 
-func (d *Dao) GetAccountByChainAddressMemo(chain, address, memo string) (*domain.Account, error) {
+func (d *Dao) getAccountByChainAddressMemo(chain, address, memo string) (*Account, error) {
 	acctDB := &Account{}
 	if err := d.db.Last(acctDB, "chain = ? AND address = ? AND memo = ?", chain, address, memo).Error; err != nil {
 		return nil, err
 	}
-
-	return d.acctDbToDomain(acctDB), nil
+	return acctDB, nil
 }
 
-func (d *Dao) GetAccountsByChain(chain string) ([]*domain.Account, error) {
+func (d *Dao) getAccountsByChain(chain string) ([]Account, error) {
 	var accountsDB []Account
 	if err := d.db.Find(&accountsDB, "chain = ?", chain).Error; err != nil {
 		return nil, err
 	}
-	var accounts []*domain.Account
-	for _, a := range accountsDB {
-		accounts = append(accounts, d.acctDbToDomain(&a))
-	}
-	return accounts, nil
+	return accountsDB, nil
+
 }
 
-func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*domain.Account, error) {
+func (d *Dao) getAccountsByChainAddresses(chain string, addresses []string) ([]Account, error) {
 	var accountsDB []Account
 	if err := d.db.Find(&accountsDB, "chain = ? AND address in ?", chain, addresses).Error; err != nil {
 		return nil, err
 	}
-	var accounts []*domain.Account
-	for _, a := range accountsDB {
-		accounts = append(accounts, d.acctDbToDomain(&a))
-	}
-	return accounts, nil
+	return accountsDB, nil
 }
 
-func (d *Dao) acctDbToDomain(acct *Account) *domain.Account {
-	return domain.AccountFactory(&domain.AccountDTO{
-		Id:      acct.ID,
-		Chain:   acct.Chain,
-		Address: acct.Address,
-		Label:   acct.Label,
-		Memo:    acct.Memo,
-		Status:  acct.Status,
-	})
+func (d *Dao) accountsDbToDomain(accountsDB []Account, err error) ([]*model.Account, error) {
+	if err != nil || accountsDB == nil || len(accountsDB) == 0 {
+		return nil, err
+	}
+	var accountsDM []*model.Account
+	for _, acctDB := range accountsDB {
+		if acctDM, _ := d.acctDbToDomain(&acctDB, nil); acctDM != nil {
+			accountsDM = append(accountsDM, acctDM)
+		}
+	}
+	return accountsDM, nil
+}
+
+func (d *Dao) acctDbToDomain(acctDB *Account, err error) (*model.Account, error) {
+	if err != nil || acctDB == nil {
+		return nil, err
+	}
+	return model.AccountFactory(&model.AccountDTO{
+		Id:      acctDB.ID,
+		Chain:   acctDB.Chain,
+		Address: acctDB.Address,
+		Label:   acctDB.Label,
+		Memo:    acctDB.Memo,
+		Status:  acctDB.Status,
+	}), nil
 }

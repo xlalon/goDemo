@@ -49,21 +49,20 @@
 
 ---
 
-| package   | desc                                |
-|-----------|-------------------------------------|
-| admin     | admin background                    |
-| interface | public interface                    |
-| job       | crontab                             |
-| onchain   | onchain ACL                         |
-| service   | rpc service(domain bounded context) |
-| pkg       | utils                               |
+| package | desc             |
+|---------|------------------|
+| domain  | bounded contexts |
+| infra   | infra            |
+| job     | crontab          |
+| onchain | onchain ACL      |
+| pkg     | utils            |
 
 ## Run Service
 
 ---
 
-### 1. Run Interface
-cmd/interface/config.yaml
+### 1. Run Service
+cmd/xxx/config.yaml
 ```yaml
 debug: true
 server:

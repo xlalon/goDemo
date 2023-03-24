@@ -14,6 +14,10 @@ func NewFromString(value string) (Decimal, error) {
 	return Decimal{result}, err
 }
 
+func Zero() Decimal {
+	return Decimal{xdecimal.NewFromInt(0)}
+}
+
 func NewFromInt(value int64) Decimal {
 	return Decimal{xdecimal.NewFromInt(value)}
 }

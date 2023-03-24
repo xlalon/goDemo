@@ -4,7 +4,6 @@ import (
 	"flag"
 
 	"github.com/xlalon/golee/internal/infra/repository"
-	"github.com/xlalon/golee/internal/infra/repository/chain"
 	"github.com/xlalon/golee/internal/infra/repository/deposit"
 	"github.com/xlalon/golee/internal/infra/repository/wallet"
 	"github.com/xlalon/golee/internal/onchain/conf"
@@ -28,7 +27,7 @@ func Init() error {
 	var err error
 	Conf, err = fromFile(confPath)
 	Conf.Repository = &repository.Config{
-		Chain: &chain.Config{
+		Chain: &chainasset.Config{
 			Mysql: Conf.Mysql,
 			Redis: Conf.Redis,
 		},

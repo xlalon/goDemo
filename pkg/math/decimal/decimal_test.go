@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestDecimal_Div(t *testing.T) {
+	amountZero := NewFromInt(0)
+	amountTen := NewFromInt(10)
+	fmt.Println("0 / 10", amountZero.Div(amountTen))
+	//fmt.Println("10 / 0", amountTen.Div(amountZero))
+}
+
 func TestDecimal_Pow(t *testing.T) {
 	precession := NewFromInt(6)
 

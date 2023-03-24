@@ -23,3 +23,14 @@ type Deposit struct {
 
 	Version int64
 }
+
+type IncomeCursor struct {
+	mysql.Model
+
+	ChainCode string
+	Height    int64
+	TxHash    string
+	Address   string
+	Label     string
+	Index     int64
+}

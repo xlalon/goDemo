@@ -43,6 +43,16 @@ func (c *Handler) QueryInt64(context *Context, key string) (int64, bool) {
 	return 0, false
 }
 
+func (c *Handler) QueryFloat(context *Context, key string) (float64, bool) {
+	v, ok := context.GetQuery(key)
+	if ok {
+		if vFloat, err := strconv.ParseFloat(v, 64); err == nil {
+			return vFloat, true
+		}
+	}
+	return 0, false
+}
+
 func (c *Handler) BindJSON(context *Context, obj interface{}) error {
 	return context.BindJSON(obj)
 }
