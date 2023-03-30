@@ -1,7 +1,9 @@
 package ecode
 
 var (
-	ChainInvalid = New(1000510)
-	AssetInvalid = New(1000511)
-	AssetExist   = New(1000512)
+	ChainInvalid  = New(1000510)
+	ChainNotFound = New(1000511)
+
+	AssetInvalid = New(2000511)
+	AssetExist   = New(2000512)
 )

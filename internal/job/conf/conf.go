@@ -3,9 +3,6 @@ package conf
 import (
 	"flag"
 
-	"github.com/xlalon/golee/internal/infra/repository"
-	"github.com/xlalon/golee/internal/infra/repository/deposit"
-	"github.com/xlalon/golee/internal/infra/repository/wallet"
 	"github.com/xlalon/golee/internal/onchain/conf"
 	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/database/redis"
@@ -25,21 +22,8 @@ func init() {
 
 func Init() error {
 	var err error
+
 	Conf, err = fromFile(confPath)
-	Conf.Repository = &repository.Config{
-		Chain: &chainasset.Config{
-			Mysql: Conf.Mysql,
-			Redis: Conf.Redis,
-		},
-		Deposit: &deposit.Config{
-			Mysql: Conf.Mysql,
-			Redis: Conf.Redis,
-		},
-		Wallet: &wallet.Config{
-			Mysql: Conf.Mysql,
-			Redis: Conf.Redis,
-		},
-	}
 
 	json.PPrint("Config", Conf)
 
@@ -47,9 +31,8 @@ func Init() error {
 }
 
 type Config struct {
-	Repository *repository.Config `yaml:"repository"`
-	Mysql      *mysql.Config      `yaml:"mysql"`
-	Redis      *redis.Config      `yaml:"redis"`
+	Mysql *mysql.Config `yaml:"mysql"`
+	Redis *redis.Config `yaml:"redis"`
 
 	Chain *conf.Config `yaml:"chain"`
 

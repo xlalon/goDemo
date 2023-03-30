@@ -3,11 +3,11 @@ package deposit
 import (
 	"time"
 
-	"github.com/xlalon/golee/internal/domain/deposit/model"
+	"github.com/xlalon/golee/internal/domain/model/deposit"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) Save(dep *model.Deposit) error {
+func (d *Dao) Save(dep *deposit.Deposit) error {
 	var createdAt time.Time
 	var version int64
 	depositDB, err := d.getDepositById(dep.Id())
@@ -37,11 +37,11 @@ func (d *Dao) Save(dep *model.Deposit) error {
 	return nil
 }
 
-func (d *Dao) GetDepositById(id int64) (*model.Deposit, error) {
+func (d *Dao) GetDepositById(id int64) (*deposit.Deposit, error) {
 	return d.depositDbToDomain(d.getDepositById(id))
 }
 
-func (d *Dao) GetDeposits(page, limit int64) ([]*model.Deposit, error) {
+func (d *Dao) GetDeposits(page, limit int64) ([]*deposit.Deposit, error) {
 	return d.depositsDbToDomain(d.getDeposits(page, limit))
 }
 
@@ -68,11 +68,11 @@ func (d *Dao) getDeposits(page, limit int64) ([]Deposit, error) {
 	return depsDB, nil
 }
 
-func (d *Dao) depositsDbToDomain(depsDB []Deposit, err error) ([]*model.Deposit, error) {
+func (d *Dao) depositsDbToDomain(depsDB []Deposit, err error) ([]*deposit.Deposit, error) {
 	if err != nil || depsDB == nil || len(depsDB) == 0 {
 		return nil, err
 	}
-	var deps []*model.Deposit
+	var deps []*deposit.Deposit
 	for _, depDB := range depsDB {
 		if depDM, _ := d.depositDbToDomain(&depDB, nil); depDM != nil {
 			deps = append(deps, depDM)
@@ -81,11 +81,11 @@ func (d *Dao) depositsDbToDomain(depsDB []Deposit, err error) ([]*model.Deposit,
 	return deps, nil
 }
 
-func (d *Dao) depositDbToDomain(dep *Deposit, err error) (*model.Deposit, error) {
+func (d *Dao) depositDbToDomain(dep *Deposit, err error) (*deposit.Deposit, error) {
 	if err != nil || dep == nil {
 		return nil, err
 	}
-	return model.DepositFactory(&model.DepositDTO{
+	return deposit.DepositFactory(&deposit.DepositDTO{
 		Id:        dep.ID,
 		Chain:     dep.Chain,
 		Asset:     dep.Asset,
@@ -97,6 +97,6 @@ func (d *Dao) depositDbToDomain(dep *Deposit, err error) (*model.Deposit, error)
 		Amount:    dep.Amount,
 		AmountRaw: dep.AmountRaw,
 		VOut:      dep.VOut,
-		Status:    model.Status(dep.Status),
+		Status:    deposit.Status(dep.Status),
 	}), nil
 }

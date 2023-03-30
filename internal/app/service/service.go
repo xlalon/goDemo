@@ -1,24 +1,15 @@
-package job
+package service
 
 import (
+	"github.com/xlalon/golee/internal/app/conf"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
 	"github.com/xlalon/golee/internal/domain/model/wallet"
 	chainRepo "github.com/xlalon/golee/internal/infra/repository/chainasset"
 	depositRepo "github.com/xlalon/golee/internal/infra/repository/deposit"
 	walletRepo "github.com/xlalon/golee/internal/infra/repository/wallet"
-	"github.com/xlalon/golee/internal/job/conf"
-	"github.com/xlalon/golee/internal/job/scheduler/chain"
 	"github.com/xlalon/golee/internal/onchain"
-	"github.com/xlalon/golee/internal/onchain/x"
-	"github.com/xlalon/golee/pkg/job/worker"
 )
-
-var (
-	chainScd *chain.Chain
-)
-
-var DomainRegistry = &Registry{}
 
 type Registry struct {
 	chainRepository   chainasset.ChainRepository
@@ -27,44 +18,35 @@ type Registry struct {
 
 	chainAssetSvc *chainasset.Service
 
-	onChainSvc *onchain.Service
+	onChainService *onchain.Service
 }
 
-func Init(server *worker.Server, conf *conf.Config) error {
-	initScd(conf)
-	return registerTask(server)
-}
+var (
+	DomainRegistry *Registry
+)
 
-func initScd(conf *conf.Config) {
-	_ = x.Init(conf.Chain)
-
+func Init(conf *conf.Config) {
 	chainRepository := chainRepo.NewDao(&chainRepo.Config{
 		Mysql: conf.Mysql,
 		Redis: conf.Redis,
 	})
-
 	depositRepository := depositRepo.NewDao(&depositRepo.Config{
 		Mysql: conf.Mysql,
 		Redis: conf.Redis,
 	})
-
 	walletRepository := walletRepo.NewDao(&walletRepo.Config{
 		Mysql: conf.Mysql,
 		Redis: conf.Redis,
 	})
 
 	DomainRegistry = &Registry{
+
 		chainRepository:   chainRepository,
 		depositRepository: depositRepository,
 		walletRepository:  walletRepository,
 
 		chainAssetSvc: chainasset.NewService(chainRepository),
-		onChainSvc:    onchain.NewService(),
+
+		onChainService: onchain.NewService(),
 	}
-
-	chainScd = chain.NewChain()
-}
-
-func registerTask(server *worker.Server) error {
-	return chainScd.Register(server)
 }

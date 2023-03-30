@@ -3,7 +3,6 @@ package chain
 import (
 	"fmt"
 
-	"github.com/xlalon/golee/internal/infra/repository"
 	"github.com/xlalon/golee/internal/job/task/chain"
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/pkg/job/worker"
@@ -14,9 +13,9 @@ type Chain struct {
 	onchainSvc *onchain.Service
 }
 
-func NewChain(repo *repository.Registry) *Chain {
+func NewChain() *Chain {
 	return &Chain{
-		chainTask:  chain.NewChain(repo.ChainRepository()),
+		chainTask:  chain.NewChain(),
 		onchainSvc: onchain.NewService(),
 	}
 }

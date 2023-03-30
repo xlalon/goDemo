@@ -3,11 +3,11 @@ package deposit
 import (
 	"time"
 
-	"github.com/xlalon/golee/internal/domain/deposit/model"
+	"github.com/xlalon/golee/internal/domain/model/deposit"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) SaveIncomeCursor(cursor *model.IncomeCursor) error {
+func (d *Dao) SaveIncomeCursor(cursor *deposit.IncomeCursor) error {
 	var createdAt time.Time
 	id := mysql.NextID()
 	ic, err := d.getIncomeCursor(cursor.ChainCode())
@@ -26,12 +26,12 @@ func (d *Dao) SaveIncomeCursor(cursor *model.IncomeCursor) error {
 	}).Error
 }
 
-func (d *Dao) GetIncomeCursor(chainCode string) (*model.IncomeCursor, error) {
+func (d *Dao) GetIncomeCursor(chainCode string) (*deposit.IncomeCursor, error) {
 	ic, err := d.getIncomeCursor(chainCode)
 	if err != nil {
 		return nil, err
 	}
-	return model.NewIncomeCursor(&model.IncomeCursorDTO{
+	return deposit.NewIncomeCursor(&deposit.IncomeCursorDTO{
 		ChainCode: chainCode,
 		Height:    ic.Height,
 		TxHash:    ic.TxHash,

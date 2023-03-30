@@ -3,11 +3,11 @@ package chainasset
 import (
 	"time"
 
-	"github.com/xlalon/golee/internal/domain/chainasset/model"
+	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) SaveAsset(asset *model.Asset) error {
+func (d *Dao) SaveAsset(asset *chainasset.Asset) error {
 	if asset == nil {
 		return nil
 	}
@@ -44,12 +44,12 @@ func (d *Dao) SaveAsset(asset *model.Asset) error {
 	return err
 }
 
-func (d *Dao) SaveAssets(assets []*model.Asset) error {
+func (d *Dao) SaveAssets(assets []*chainasset.Asset) error {
 	if len(assets) == 0 {
 		return nil
 	}
 	// update assets
-	chainAssets := make(map[string][]*model.Asset)
+	chainAssets := make(map[string][]*chainasset.Asset)
 	for _, asset := range assets {
 		chainAssets[asset.Chain()] = append(chainAssets[asset.Chain()], asset)
 	}
@@ -57,7 +57,7 @@ func (d *Dao) SaveAssets(assets []*model.Asset) error {
 		if len(assetsDM) == 0 {
 			continue
 		}
-		assetsIdDM := make(map[int64]*model.Asset)
+		assetsIdDM := make(map[int64]*chainasset.Asset)
 		for _, assetDM := range assetsDM {
 			id := assetDM.Id()
 			if id == 0 {
@@ -103,23 +103,23 @@ func (d *Dao) SaveAssets(assets []*model.Asset) error {
 	return nil
 }
 
-func (d *Dao) GetAssets() ([]*model.Asset, error) {
+func (d *Dao) GetAssets() ([]*chainasset.Asset, error) {
 	return d.assetsDbToDomain(d.getAssets())
 }
 
-func (d *Dao) GetAssetsByCode(assetCode string) ([]*model.Asset, error) {
+func (d *Dao) GetAssetsByCode(assetCode string) ([]*chainasset.Asset, error) {
 	return d.assetsDbToDomain(d.getAssetsByCode(assetCode))
 }
 
-func (d *Dao) GetChainAssets(chainCode string) ([]*model.Asset, error) {
+func (d *Dao) GetChainAssets(chainCode string) ([]*chainasset.Asset, error) {
 	return d.assetsDbToDomain(d.getAssetsByChain(chainCode))
 }
 
-func (d *Dao) GetAssetByCode(chainCode, assetCode string) (*model.Asset, error) {
+func (d *Dao) GetAssetByCode(chainCode, assetCode string) (*chainasset.Asset, error) {
 	return d.assetDbToDomain(d.getAssetByCode(chainCode, assetCode))
 }
 
-func (d *Dao) GetAssetByIdentity(chainCode, identity string) (*model.Asset, error) {
+func (d *Dao) GetAssetByIdentity(chainCode, identity string) (*chainasset.Asset, error) {
 	return d.assetDbToDomain(d.getAssetByIdentity(chainCode, identity))
 }
 
@@ -171,11 +171,11 @@ func (d *Dao) getAssetByIdentity(chainCode, identity string) (*Asset, error) {
 	return assetDB, nil
 }
 
-func (d *Dao) assetsDbToDomain(assetsDB []Asset, err error) ([]*model.Asset, error) {
+func (d *Dao) assetsDbToDomain(assetsDB []Asset, err error) ([]*chainasset.Asset, error) {
 	if err != nil || assetsDB == nil || len(assetsDB) == 0 {
 		return nil, err
 	}
-	var assetsDM []*model.Asset
+	var assetsDM []*chainasset.Asset
 	for _, assetDB := range assetsDB {
 		if assetDM, err := d.assetDbToDomain(&assetDB, nil); err == nil && assetDM != nil {
 			assetsDM = append(assetsDM, assetDM)
@@ -184,12 +184,12 @@ func (d *Dao) assetsDbToDomain(assetsDB []Asset, err error) ([]*model.Asset, err
 	return assetsDM, nil
 }
 
-func (d *Dao) assetDbToDomain(a *Asset, err error) (*model.Asset, error) {
+func (d *Dao) assetDbToDomain(a *Asset, err error) (*chainasset.Asset, error) {
 	if err != nil || a == nil {
 		return nil, err
 	}
-	return model.AssetFactory(
-		&model.AssetDTO{
+	return chainasset.AssetFactory(
+		&chainasset.AssetDTO{
 			Id:         a.ID,
 			Code:       a.Code,
 			Name:       a.Name,

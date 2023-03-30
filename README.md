@@ -49,19 +49,43 @@
 
 ---
 
-| package | desc             |
-|---------|------------------|
-| domain  | bounded contexts |
-| infra   | infra            |
-| job     | crontab          |
-| onchain | onchain ACL      |
-| pkg     | utils            |
+| package | desc          |
+|---------|---------------|
+| app     | application   |
+| domain  | domain models |
+| infra   | infra         |
+| job     | crontab       |
+| onchain | onchain ACL   |
+| pkg     | utils         |
+
+
+## Structure
+
+---
+
+```
+      -------------------
+      |    Interface    |
+      -------------------
+         ↑            ↓
+         |          -------------------
+         |          |     Service     |
+         |          -------------------
+         |             ↑           ↓
+         |             |        -------------------
+         |             |        |      Domain     |
+         |             |        -------------------
+         |             |                 ↑
+      ----------------------------------------------
+      |              Infrastructure                |
+      ----------------------------------------------
+```
 
 ## Run Service
 
 ---
 
-### 1. Run Service
+### 1. Run App Service
 cmd/xxx/config.yaml
 ```yaml
 debug: true

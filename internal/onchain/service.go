@@ -1,11 +1,13 @@
 package onchain
 
+import "github.com/xlalon/golee/internal/onchain/conf"
+
 type Service struct {
 	chainRegistry *registry
 }
 
 func NewService() *Service {
-	return &Service{chainRegistry: defaultChainRegistry}
+	return &Service{chainRegistry: _defaultChainRegistry}
 }
 
 func (s *Service) Chains() []Code {
@@ -18,4 +20,8 @@ func (s *Service) ChainToApis() map[Code]Chainer {
 
 func (s *Service) GetChainApi(code Code) (Chainer, bool) {
 	return s.chainRegistry.getChainApi(code)
+}
+
+func (s *Service) GetChainConfig(code Code) (*conf.ChainConfig, bool) {
+	return s.chainRegistry.getChainConfig(code)
 }
