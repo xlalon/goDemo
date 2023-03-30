@@ -18,10 +18,10 @@ func Init(conf *conf.Config) error {
 	once.Do(func() {
 
 		bandChain := band.New(conf.Band)
-		onchain.RegisterChain(bandChain.Code, bandChain)
+		onchain.RegisterChain(bandChain.Code, bandChain.Config, bandChain)
 
 		waxChain := waxp.New(conf.Waxp)
-		onchain.RegisterChain(waxChain.Code, waxChain)
+		onchain.RegisterChain(waxChain.Code, waxChain.Config, waxChain)
 
 	})
 

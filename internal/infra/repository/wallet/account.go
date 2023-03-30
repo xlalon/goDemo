@@ -3,11 +3,11 @@ package wallet
 import (
 	"time"
 
-	"github.com/xlalon/golee/internal/domain/wallet/model"
+	"github.com/xlalon/golee/internal/domain/model/wallet"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) Save(acct *model.Account) error {
+func (d *Dao) Save(acct *wallet.Account) error {
 	var createdAt time.Time
 	var version int64
 	acctDB, err := d.getAccountById(acct.Id())
@@ -30,23 +30,23 @@ func (d *Dao) Save(acct *model.Account) error {
 	return nil
 }
 
-func (d *Dao) GetAccountById(accountId int64) (*model.Account, error) {
+func (d *Dao) GetAccountById(accountId int64) (*wallet.Account, error) {
 	return d.acctDbToDomain(d.getAccountById(accountId))
 }
 
-func (d *Dao) GetAccountByChainAddress(chain, address string) (*model.Account, error) {
+func (d *Dao) GetAccountByChainAddress(chain, address string) (*wallet.Account, error) {
 	return d.acctDbToDomain(d.getAccountByChainAddress(chain, address))
 }
 
-func (d *Dao) GetAccountByChainAddressMemo(chain, address, memo string) (*model.Account, error) {
+func (d *Dao) GetAccountByChainAddressMemo(chain, address, memo string) (*wallet.Account, error) {
 	return d.acctDbToDomain(d.getAccountByChainAddressMemo(chain, address, memo))
 }
 
-func (d *Dao) GetAccountsByChain(chain string) ([]*model.Account, error) {
+func (d *Dao) GetAccountsByChain(chain string) ([]*wallet.Account, error) {
 	return d.accountsDbToDomain(d.getAccountsByChain(chain))
 }
 
-func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*model.Account, error) {
+func (d *Dao) GetAccountsByChainAddresses(chain string, addresses []string) ([]*wallet.Account, error) {
 	return d.accountsDbToDomain(d.getAccountsByChainAddresses(chain, addresses))
 }
 
@@ -91,11 +91,11 @@ func (d *Dao) getAccountsByChainAddresses(chain string, addresses []string) ([]A
 	return accountsDB, nil
 }
 
-func (d *Dao) accountsDbToDomain(accountsDB []Account, err error) ([]*model.Account, error) {
+func (d *Dao) accountsDbToDomain(accountsDB []Account, err error) ([]*wallet.Account, error) {
 	if err != nil || accountsDB == nil || len(accountsDB) == 0 {
 		return nil, err
 	}
-	var accountsDM []*model.Account
+	var accountsDM []*wallet.Account
 	for _, acctDB := range accountsDB {
 		if acctDM, _ := d.acctDbToDomain(&acctDB, nil); acctDM != nil {
 			accountsDM = append(accountsDM, acctDM)
@@ -104,11 +104,11 @@ func (d *Dao) accountsDbToDomain(accountsDB []Account, err error) ([]*model.Acco
 	return accountsDM, nil
 }
 
-func (d *Dao) acctDbToDomain(acctDB *Account, err error) (*model.Account, error) {
+func (d *Dao) acctDbToDomain(acctDB *Account, err error) (*wallet.Account, error) {
 	if err != nil || acctDB == nil {
 		return nil, err
 	}
-	return model.AccountFactory(&model.AccountDTO{
+	return wallet.AccountFactory(&wallet.AccountDTO{
 		Id:      acctDB.ID,
 		Chain:   acctDB.Chain,
 		Address: acctDB.Address,

@@ -3,11 +3,11 @@ package chainasset
 import (
 	"time"
 
-	"github.com/xlalon/golee/internal/domain/chainasset/model"
+	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) SaveAssetSetting(chainCode, assetCode string, settings *model.AssetSetting) error {
+func (d *Dao) SaveAssetSetting(chainCode, assetCode string, settings *chainasset.AssetSetting) error {
 	var createdAt time.Time
 	id := mysql.NextID()
 	if assetSetting, err := d.getAssetSetting(chainCode, assetCode); err == nil && assetSetting != nil {
@@ -27,15 +27,15 @@ func (d *Dao) SaveAssetSetting(chainCode, assetCode string, settings *model.Asse
 	}).Error
 }
 
-func (d *Dao) GetAssetSetting(chainCode, assetCode string) (*model.AssetSetting, error) {
+func (d *Dao) GetAssetSetting(chainCode, assetCode string) (*chainasset.AssetSetting, error) {
 	return d.assetSettingDBToDM(d.getAssetSetting(chainCode, assetCode))
 }
 
-func (d *Dao) GetAssetSettings() ([]*model.AssetSetting, error) {
+func (d *Dao) GetAssetSettings() ([]*chainasset.AssetSetting, error) {
 	return d.assetSettingsDBToDM(d.getAssetSettings())
 }
 
-func (d *Dao) GetAssetSettingsByChain(chainCode string) ([]*model.AssetSetting, error) {
+func (d *Dao) GetAssetSettingsByChain(chainCode string) ([]*chainasset.AssetSetting, error) {
 	return d.assetSettingsDBToDM(d.getAssetSettingsByChain(chainCode))
 }
 
@@ -63,11 +63,11 @@ func (d *Dao) getAssetSettingsByChain(chainCode string) ([]AssetSetting, error) 
 	return assetsSettingDB, nil
 }
 
-func (d *Dao) assetSettingsDBToDM(settings []AssetSetting, err error) ([]*model.AssetSetting, error) {
+func (d *Dao) assetSettingsDBToDM(settings []AssetSetting, err error) ([]*chainasset.AssetSetting, error) {
 	if err != nil || settings == nil || len(settings) == 0 {
 		return nil, err
 	}
-	var settingsDM []*model.AssetSetting
+	var settingsDM []*chainasset.AssetSetting
 	for _, setting := range settings {
 		if settingDM, _ := d.assetSettingDBToDM(&setting, nil); settingDM != nil {
 			settingsDM = append(settingsDM, settingDM)
@@ -76,9 +76,9 @@ func (d *Dao) assetSettingsDBToDM(settings []AssetSetting, err error) ([]*model.
 	return settingsDM, nil
 }
 
-func (d *Dao) assetSettingDBToDM(setting *AssetSetting, err error) (*model.AssetSetting, error) {
+func (d *Dao) assetSettingDBToDM(setting *AssetSetting, err error) (*chainasset.AssetSetting, error) {
 	if err != nil || setting == nil {
 		return nil, err
 	}
-	return model.NewAssetSetting(setting.MinDepositAmount, setting.WithdrawFee, setting.ToHotThreshold), nil
+	return chainasset.NewAssetSetting(setting.MinDepositAmount, setting.WithdrawFee, setting.ToHotThreshold), nil
 }
