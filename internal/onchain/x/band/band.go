@@ -3,6 +3,7 @@ package band
 import (
 	"errors"
 	"fmt"
+	"github.com/xlalon/golee/pkg/math/compare"
 	"net/url"
 	"strconv"
 
@@ -18,6 +19,8 @@ type Band struct {
 	*onchain.Chain
 
 	nodeClient *client.RestfulClient
+
+	maxScanHeightRange int64
 }
 
 func New(conf *conf.ChainConfig) *Band {
@@ -33,6 +36,7 @@ func New(conf *conf.ChainConfig) *Band {
 				Headers: url.Values{"Content-Type": []string{"application/json"}},
 				Timeout: 30,
 			}),
+		maxScanHeightRange: 1,
 	}
 }
 
@@ -47,29 +51,48 @@ func (b *Band) GetLatestHeight() (int64, error) {
 }
 
 func (b *Band) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
-	var transfers []*onchain.Transaction
+	var txs []*onchain.Transaction
 
 	resp, err := b.nodeClient.Get(fmt.Sprintf("/cosmos/tx/v1beta1/txs/%s", txHash), nil)
 	if err != nil {
 		fmt.Println(err)
-		return transfers, err
+		return txs, err
 	}
 
-	transfers, _ = b.parseTx(json.JGet(resp, "tx_response").String())
+	txs, _ = b.parseTxResponse(json.JGet(resp, "tx_response").String())
 
-	err = b.updateTransfersStatus(transfers)
+	err = b.updateTxsStatus(txs)
 
-	return transfers, err
+	return txs, err
 }
 
-func (b *Band) ScanTxn(xxx interface{}) ([]*onchain.Transaction, error) {
-	return b.ScanTxnByBlock(xxx)
+func (b *Band) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+	latestHeight, err := b.GetLatestHeight()
+	if err != nil {
+		return nil, err
+	}
+	var txs []*onchain.Transaction
+	if cursor.Height == 0 {
+		cursor.Height = latestHeight
+		return txs, nil
+	}
+	maxHeight := compare.Min([]int64{latestHeight, cursor.Height + b.maxScanHeightRange})
+	for height := cursor.Height + 1; height < maxHeight+1; height++ {
+		_txs, errScan := b.scanTxnByBlock(height)
+		if errScan != nil {
+			return nil, errScan
+		}
+		txs = append(txs, _txs...)
+	}
+
+	cursor.Height = maxHeight
+
+	return txs, nil
 }
 
-func (b *Band) ScanTxnByBlock(heightOrHash interface{}) ([]*onchain.Transaction, error) {
+func (b *Band) scanTxnByBlock(height int64) ([]*onchain.Transaction, error) {
 
-	var transfers []*onchain.Transaction
-	height := heightOrHash.(int64)
+	var txs []*onchain.Transaction
 
 	params := make(url.Values)
 	params.Set("events", fmt.Sprintf("tx.height=%d", height))
@@ -78,15 +101,15 @@ func (b *Band) ScanTxnByBlock(heightOrHash interface{}) ([]*onchain.Transaction,
 
 	resp, err := b.nodeClient.Get("/cosmos/tx/v1beta1/txs", params)
 	if err != nil {
-		return transfers, err
+		return txs, err
 	}
 	txsResp := json.JGet(resp, "tx_responses")
 
 	for _, txResp := range txsResp.Array() {
-		parsedTx, _ := b.parseTx(txResp.String())
-		transfers = append(transfers, parsedTx...)
+		_txs, _ := b.parseTxResponse(txResp.String())
+		txs = append(txs, _txs...)
 	}
-	return transfers, nil
+	return txs, nil
 }
 
 func (b *Band) NewAccount(label onchain.Label) (*onchain.Account, error) {
@@ -161,18 +184,18 @@ func (b *Band) Transfer(reqData *onchain.TransferDTO) (*onchain.Receipt, error) 
 	return &onchain.Receipt{}, nil
 }
 
-func (b *Band) parseTx(txResponse string) ([]*onchain.Transaction, error) {
+func (b *Band) parseTxResponse(txResponse string) ([]*onchain.Transaction, error) {
 
-	var transfers []*onchain.Transaction
+	var txs []*onchain.Transaction
 
-	status := onchain.TransactionStatus{Result: onchain.TransactionPending}
+	status := onchain.TxnStatus{Result: onchain.TxnPending}
 	if code := json.JGet(txResponse, "code").Int(); code != 0 {
-		status.Result = onchain.TransactionFailed
+		status.Result = onchain.TxnFailed
 	}
 
 	tx := json.JGet(txResponse, "tx").String()
 	if txType := json.JGet(tx, "@type").String(); txType != "/cosmos.tx.v1beta1.Tx" {
-		return transfers, errors.New("tx type not /cosmos.tx.v1beta1.Tx")
+		return txs, errors.New("tx type not /cosmos.tx.v1beta1.Tx")
 	}
 	txHash := json.JGet(txResponse, "txhash").String()
 	height := json.JGet(txResponse, "height").Int()
@@ -193,41 +216,47 @@ func (b *Band) parseTx(txResponse string) ([]*onchain.Transaction, error) {
 			if err != nil || identity == "" || amountInt <= 0 {
 				continue
 			}
-			transfer := &onchain.Transaction{
-				Chain:    b.Code,
-				Identity: identity,
-				TxHash:   txHash,
-				Height:   height,
-				Sender:   sender,
-				Receiver: receiver,
-				Amount:   decimal.NewFromInt(amountInt),
-				VOut:     0,
-				Memo:     memo,
-				Status:   status,
+			txn := &onchain.Transaction{
+				TxnId: onchain.TxnId{
+					Chain:  b.Code,
+					TxHash: txHash,
+					VOut:   0,
+				},
+				Receiver: onchain.Receiver{
+					Address: receiver,
+					Memo:    memo,
+				},
+				CoinValue: onchain.CoinValue{
+					Identity: identity,
+					Amount:   decimal.NewFromInt(amountInt),
+				},
+				Status: status,
+				Sender: sender,
+				Height: height,
 			}
-			transfers = append(transfers, transfer)
+			txs = append(txs, txn)
 		}
 	}
-	return transfers, nil
+	return txs, nil
 }
 
-func (b *Band) updateTransfersStatus(transfers []*onchain.Transaction) error {
+func (b *Band) updateTxsStatus(txs []*onchain.Transaction) error {
 	latestHeight, _ := b.GetLatestHeight()
-	for _, transfer := range transfers {
-		if transfer.Status.Result == onchain.TransactionFailed {
+	for _, txn := range txs {
+		if txn.Status.Result == onchain.TxnFailed {
 			continue
 		}
-		if transfer.Height == 0 {
-			// update transfer height first
+		if txn.Height == 0 {
+			// update txn height first
 			continue
 		}
-		confirm := latestHeight - transfer.Height
+		confirm := latestHeight - txn.Height
 		if confirm <= 0 {
 			continue
 		}
-		transfer.Status.Confirmations = confirm
+		txn.Status.Confirmations = confirm
 		if confirm >= b.Config.IrreversibleBlock {
-			transfer.Status.Result = onchain.TransactionSuccess
+			txn.Status.Result = onchain.TxnSuccess
 		}
 	}
 	return nil

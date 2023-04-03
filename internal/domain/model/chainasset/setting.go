@@ -12,17 +12,17 @@ type AssetSetting struct {
 }
 
 func NewAssetSetting(minDepositAmount, withdrawFee, toHotThreshold decimal.Decimal) *AssetSetting {
-	assetSetting := &AssetSetting{}
-	if err := assetSetting.setMinDepositAmount(minDepositAmount); err != nil {
+	setting := &AssetSetting{}
+	if err := setting.setMinDepositAmount(minDepositAmount); err != nil {
 		return nil
 	}
-	if err := assetSetting.setWithdrawFee(withdrawFee); err != nil {
+	if err := setting.setWithdrawFee(withdrawFee); err != nil {
 		return nil
 	}
-	if err := assetSetting.setToHotThreshold(toHotThreshold); err != nil {
+	if err := setting.setToHotThreshold(toHotThreshold); err != nil {
 		return nil
 	}
-	return assetSetting
+	return setting
 }
 
 func (as *AssetSetting) MinDepositAmount() decimal.Decimal {
@@ -31,7 +31,7 @@ func (as *AssetSetting) MinDepositAmount() decimal.Decimal {
 
 func (as *AssetSetting) setMinDepositAmount(amount decimal.Decimal) error {
 	if as.minDepositAmount.GreaterThanZero() {
-		return ecode.ParameterChangeError
+		return ecode.AssetSettingChange
 	}
 	as.minDepositAmount = amount
 	return nil
@@ -43,7 +43,7 @@ func (as *AssetSetting) WithdrawFee() decimal.Decimal {
 
 func (as *AssetSetting) setWithdrawFee(amount decimal.Decimal) error {
 	if as.withdrawFee.GreaterThanZero() {
-		return ecode.ParameterChangeError
+		return ecode.AssetSettingChange
 	}
 	as.withdrawFee = amount
 	return nil
@@ -55,7 +55,7 @@ func (as *AssetSetting) ToHotThreshold() decimal.Decimal {
 
 func (as *AssetSetting) setToHotThreshold(amount decimal.Decimal) error {
 	if as.toHotThreshold.GreaterThanZero() {
-		return ecode.ParameterChangeError
+		return ecode.AssetSettingChange
 	}
 	as.toHotThreshold = amount
 	return nil
@@ -67,4 +67,12 @@ func (as *AssetSetting) ToAssetSettingDTO() *AssetSettingDTO {
 		WithdrawFee:      as.WithdrawFee(),
 		ToHotThreshold:   as.ToHotThreshold(),
 	}
+}
+
+type AssetSettingDTO struct {
+	ChainCode        ChainCode       `json:"chain_code"`
+	AssetCode        AssetCode       `json:"asset_code"`
+	MinDepositAmount decimal.Decimal `json:"min_deposit_amount"`
+	WithdrawFee      decimal.Decimal `json:"withdraw_fee"`
+	ToHotThreshold   decimal.Decimal `json:"to_hot_threshold"`
 }

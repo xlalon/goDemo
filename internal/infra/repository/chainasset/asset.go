@@ -5,43 +5,33 @@ import (
 
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/pkg/database/mysql"
+	"github.com/xlalon/golee/pkg/ecode"
 )
 
 func (d *Dao) SaveAsset(asset *chainasset.Asset) error {
 	if asset == nil {
-		return nil
+		return ecode.AssetInvalid
 	}
 	var createdAt time.Time
-	assetId := mysql.NextID()
-	if asset.Id() > 0 {
-		assetId = asset.Id()
-	}
-	assetDb, err := d.getAssetByCode(asset.Chain(), asset.Code())
-	if err != nil {
-		return err
-	}
-	if assetDb != nil {
+	assetDb, err := d.getAssetById(asset.Id())
+	if err == nil && assetDb != nil {
 		createdAt = assetDb.CreatedAt
-		assetId = assetDb.ID
 	}
-	if err = d.db.Model(&Asset{Model: mysql.Model{ID: assetId}}).Save(&Asset{
+	return d.db.Model(&Asset{Model: mysql.Model{ID: asset.Id()}}).Save(&Asset{
 		Model: mysql.Model{
-			ID:        assetId,
+			ID:        asset.Id(),
 			CreatedAt: createdAt,
 		},
-		ChainCode: asset.Chain(),
-		Code:      asset.Code(),
+		ChainCode: string(asset.Chain()),
+		Code:      string(asset.Code()),
 		Name:      asset.Name(),
 		Identity:  asset.Identity(),
 		Precision: asset.Precession(),
 		Status:    string(asset.Status()),
-	}).Error; err != nil {
-		return err
-	}
-	if asset.Setting() != nil {
-		err = d.SaveAssetSetting(asset.Chain(), asset.Code(), asset.Setting())
-	}
-	return err
+	}).Error
+	//if asset.Setting() != nil {
+	//	err = d.SaveAssetSetting(asset.Chain(), asset.Code(), asset.Setting())
+	//}
 }
 
 func (d *Dao) SaveAssets(assets []*chainasset.Asset) error {
@@ -49,7 +39,7 @@ func (d *Dao) SaveAssets(assets []*chainasset.Asset) error {
 		return nil
 	}
 	// update assets
-	chainAssets := make(map[string][]*chainasset.Asset)
+	chainAssets := make(map[chainasset.ChainCode][]*chainasset.Asset)
 	for _, asset := range assets {
 		chainAssets[asset.Chain()] = append(chainAssets[asset.Chain()], asset)
 	}
@@ -65,7 +55,7 @@ func (d *Dao) SaveAssets(assets []*chainasset.Asset) error {
 			}
 			assetsIdDM[id] = assetDM
 		}
-		assetsDb, err := d.getAssetsByChain(chainCode)
+		assetsDb, err := d.getAssetsByChain(string(chainCode))
 		if err != nil {
 			return err
 		}
@@ -84,8 +74,8 @@ func (d *Dao) SaveAssets(assets []*chainasset.Asset) error {
 					ID:        assetId,
 					CreatedAt: assetsDBIdCT[assetId],
 				},
-				ChainCode: _asset.Chain(),
-				Code:      _asset.Code(),
+				ChainCode: string(_asset.Chain()),
+				Code:      string(_asset.Code()),
 				Name:      _asset.Name(),
 				Identity:  _asset.Identity(),
 				Precision: _asset.Precession(),
@@ -107,20 +97,20 @@ func (d *Dao) GetAssets() ([]*chainasset.Asset, error) {
 	return d.assetsDbToDomain(d.getAssets())
 }
 
-func (d *Dao) GetAssetsByCode(assetCode string) ([]*chainasset.Asset, error) {
-	return d.assetsDbToDomain(d.getAssetsByCode(assetCode))
+func (d *Dao) GetAssetsByCode(assetCode chainasset.AssetCode) ([]*chainasset.Asset, error) {
+	return d.assetsDbToDomain(d.getAssetsByCode(string(assetCode)))
 }
 
-func (d *Dao) GetChainAssets(chainCode string) ([]*chainasset.Asset, error) {
-	return d.assetsDbToDomain(d.getAssetsByChain(chainCode))
+func (d *Dao) GetChainAssets(chainCode chainasset.ChainCode) ([]*chainasset.Asset, error) {
+	return d.assetsDbToDomain(d.getAssetsByChain(string(chainCode)))
 }
 
-func (d *Dao) GetAssetByCode(chainCode, assetCode string) (*chainasset.Asset, error) {
-	return d.assetDbToDomain(d.getAssetByCode(chainCode, assetCode))
+func (d *Dao) GetAssetByCode(chainCode chainasset.ChainCode, assetCode chainasset.AssetCode) (*chainasset.Asset, error) {
+	return d.assetDbToDomain(d.getAssetByCode(string(chainCode), string(assetCode)))
 }
 
-func (d *Dao) GetAssetByIdentity(chainCode, identity string) (*chainasset.Asset, error) {
-	return d.assetDbToDomain(d.getAssetByIdentity(chainCode, identity))
+func (d *Dao) GetAssetByIdentity(chainCode chainasset.ChainCode, identity string) (*chainasset.Asset, error) {
+	return d.assetDbToDomain(d.getAssetByIdentity(string(chainCode), identity))
 }
 
 func (d *Dao) getAssetById(assetId int64) (*Asset, error) {
@@ -191,9 +181,9 @@ func (d *Dao) assetDbToDomain(a *Asset, err error) (*chainasset.Asset, error) {
 	return chainasset.AssetFactory(
 		&chainasset.AssetDTO{
 			Id:         a.ID,
-			Code:       a.Code,
+			Code:       chainasset.AssetCode(a.Code),
 			Name:       a.Name,
-			Chain:      a.ChainCode,
+			Chain:      chainasset.ChainCode(a.ChainCode),
 			Identity:   a.Identity,
 			Precession: a.Precision,
 			Status:     a.Status,

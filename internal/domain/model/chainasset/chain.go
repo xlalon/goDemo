@@ -1,23 +1,39 @@
 package chainasset
 
 import (
+	"github.com/xlalon/golee/internal/domain/model"
 	"github.com/xlalon/golee/pkg/ecode"
+	"strings"
+)
+
+type ChainCode string
+
+func (cc ChainCode) Normalize() ChainCode {
+	return ChainCode(strings.ToUpper(string(cc)))
+}
+
+type ChainStatus string
+
+const (
+	ChainStatusOnline  ChainStatus = "ONLINE"
+	ChainStatusOffline             = "OFFLINE"
 )
 
 // Chain Aggregation
 type Chain struct {
-	id int64
+	model.IdentifiedDomainObject
 
-	code   string
-	name   string
-	status Status
+	code ChainCode
+	name string
+
+	status ChainStatus
 
 	assets []*Asset
 }
 
-func ChainFactory(chainDTO *ChainDTO, assetsDM []*Asset) *Chain {
+func ChainFactory(chainDTO *ChainDTO, assets []*Asset) *Chain {
 	chain := &Chain{}
-	if err := chain.setId(chainDTO.Id); err != nil {
+	if err := chain.SetId(chainDTO.Id); err != nil {
 		return nil
 	}
 	if err := chain.setCode(chainDTO.Code); err != nil {
@@ -26,39 +42,27 @@ func ChainFactory(chainDTO *ChainDTO, assetsDM []*Asset) *Chain {
 	if err := chain.setName(chainDTO.Name); err != nil {
 		return nil
 	}
-	if err := chain.setStatus(Status(chainDTO.Status)); err != nil {
+	if err := chain.setStatus(ChainStatus(chainDTO.Status)); err != nil {
 		return nil
 	}
-	if err := chain.setAssets(assetsDM); err != nil {
+	if err := chain.setAssets(assets); err != nil {
 		return nil
 	}
 	return chain
 }
 
-func (c *Chain) Id() int64 {
-	return c.id
-}
-
-func (c *Chain) setId(id int64) error {
-	if c.Id() != 0 {
-		return ecode.ParameterChangeError
-	}
-	if id <= 0 {
-		return ecode.ParameterInvalidError
-	}
-	c.id = id
-	return nil
-}
-
-func (c *Chain) Code() string {
+func (c *Chain) Code() ChainCode {
 	return c.code
 }
 
-func (c *Chain) setCode(code string) error {
+func (c *Chain) setCode(code ChainCode) error {
 	if c.Code() != "" {
-		return ecode.ParameterNullError
+		return ecode.ChainCodeChange
 	}
-	c.code = code
+	if code == "" {
+		return ecode.ChainCodeInvalid
+	}
+	c.code = code.Normalize()
 	return nil
 }
 
@@ -68,19 +72,19 @@ func (c *Chain) Name() string {
 
 func (c *Chain) setName(name string) error {
 	if name == "" {
-		return ecode.ParameterNullError
+		return ecode.ChainNameInvalid
 	}
 	c.name = name
 	return nil
 }
 
-func (c *Chain) Status() Status {
+func (c *Chain) Status() ChainStatus {
 	return c.status
 }
 
-func (c *Chain) setStatus(status Status) error {
+func (c *Chain) setStatus(status ChainStatus) error {
 	if status != ChainStatusOffline && status != ChainStatusOnline {
-		return ecode.ParameterInvalidError
+		return ecode.ChainStatusInvalid
 	}
 	c.status = status
 	return nil
@@ -96,35 +100,31 @@ func (c *Chain) setAssets(assets []*Asset) error {
 	}
 	for _, asset := range assets {
 		if asset.Chain() != c.Code() {
-			return ecode.ParameterInvalidError
+			return ecode.AssetInvalid
 		}
 	}
 	c.assets = assets
 	return nil
 }
 
-func (c *Chain) AddAsset(asset *Asset) error {
-	if asset.Chain() != c.Code() {
-		return ecode.AssetInvalid
-	}
-	// duplicate check
+func (c *Chain) RegisterAsset(assetCode AssetCode, assetName, identity string, precession int64) (*Asset, error) {
 	for _, a := range c.Assets() {
-		if a.Code() == asset.Code() {
-			return ecode.AssetExist
+		if a.Code() == assetCode {
+			return nil, ecode.AssetExist
 		}
 	}
+	asset := AssetFactory(&AssetDTO{
+		Id:         c.NextId(),
+		Code:       assetCode,
+		Name:       assetName,
+		Chain:      c.Code(),
+		Identity:   identity,
+		Precession: precession,
+		Status:     AssetStatusOffline,
+	})
 	c.assets = append(c.assets, asset)
-	return nil
-}
 
-func (c *Chain) RemoveAsset(asset *Asset) {
-	var assets []*Asset
-	for _, a := range c.Assets() {
-		if a.Code() != asset.Code() {
-			assets = append(assets, a)
-		}
-	}
-	c.assets = assets
+	return asset, nil
 }
 
 func (c *Chain) IsOnline() bool {
@@ -155,4 +155,12 @@ func (c *Chain) ToChainDTO() *ChainDTO {
 		Status: string(c.Status()),
 		Assets: assetsDTO,
 	}
+}
+
+type ChainDTO struct {
+	Id     int64       `json:"id"`
+	Code   ChainCode   `json:"code"`
+	Name   string      `json:"name"`
+	Status string      `json:"status"`
+	Assets []*AssetDTO `json:"assets"`
 }

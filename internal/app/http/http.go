@@ -50,7 +50,7 @@ func registerRouter(r *server.Engine) {
 }
 
 func initServices(conf *conf.Config) {
-	_ = x.Init(conf.Chain)
+	x.Init(conf.Chain)
 	service.Init(conf)
 	chainSvc = service.NewChainService()
 	assetSvc = service.NewAssetService()

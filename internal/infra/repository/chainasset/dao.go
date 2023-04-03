@@ -20,7 +20,7 @@ type Dao struct {
 
 func NewDao(conf *Config) *Dao {
 
-	mysqlDb, err := gorm.Open(xmysql.Open(conf.Mysql.DNS), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
+	mysqlDb, err := gorm.Open(xmysql.Open(conf.Mysql.DSN), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 	if err != nil {
 		panic(err)
 	}

@@ -1,26 +1,46 @@
 package chainasset
 
 import (
+	"strings"
+
+	"github.com/xlalon/golee/internal/domain/model"
 	"github.com/xlalon/golee/pkg/ecode"
+	"github.com/xlalon/golee/pkg/math/decimal"
+)
+
+type AssetCode string
+
+func (ac AssetCode) Normalize() AssetCode {
+	return AssetCode(strings.ToUpper(string(ac)))
+}
+
+type AssetStatus string
+
+const (
+	AssetStatusOnline  AssetStatus = "ONLINE"
+	AssetStatusOffline             = "OFFLINE"
 )
 
 // Asset Entity
 type Asset struct {
-	id int64
+	model.IdentifiedDomainObject
 
-	code       string
-	name       string
-	chain      string
+	code AssetCode
+	name string
+
+	chain ChainCode
+
 	identity   string
 	precession int64
-	status     Status
+
+	status AssetStatus
 
 	setting *AssetSetting
 }
 
 func AssetFactory(assetDTO *AssetDTO) *Asset {
 	asset := &Asset{}
-	if err := asset.setId(assetDTO.Id); err != nil {
+	if err := asset.SetId(assetDTO.Id); err != nil {
 		return nil
 	}
 	if err := asset.setName(assetDTO.Name); err != nil {
@@ -38,15 +58,15 @@ func AssetFactory(assetDTO *AssetDTO) *Asset {
 	if err := asset.setPrecession(assetDTO.Precession); err != nil {
 		return nil
 	}
-	if err := asset.setStatus(Status(assetDTO.Status)); err != nil {
+	if err := asset.setStatus(AssetStatus(assetDTO.Status)); err != nil {
 		return nil
 	}
 	if assetDTO.Setting != nil {
-		if err := asset.SetSetting(NewAssetSetting(
+		if _, err := asset.ApplySetting(
 			assetDTO.Setting.MinDepositAmount,
 			assetDTO.Setting.WithdrawFee,
 			assetDTO.Setting.ToHotThreshold,
-		)); err != nil {
+		); err != nil {
 			return nil
 		}
 	}
@@ -54,30 +74,18 @@ func AssetFactory(assetDTO *AssetDTO) *Asset {
 	return asset
 }
 
-func (a *Asset) Id() int64 {
-	return a.id
-}
-
-func (a *Asset) setId(id int64) error {
-	if a.Id() != 0 {
-		return ecode.ParameterChangeError
-	}
-	if id <= 0 {
-		return ecode.ParameterInvalidError
-	}
-	a.id = id
-	return nil
-}
-
-func (a *Asset) Code() string {
+func (a *Asset) Code() AssetCode {
 	return a.code
 }
 
-func (a *Asset) setCode(code string) error {
-	if code == "" {
-		return ecode.ParameterNullError
+func (a *Asset) setCode(code AssetCode) error {
+	if a.code != "" {
+		return ecode.AssetCodeChange
 	}
-	a.code = code
+	if code == "" {
+		return ecode.AssetCodeInvalid
+	}
+	a.code = code.Normalize()
 	return nil
 }
 
@@ -87,22 +95,22 @@ func (a *Asset) Name() string {
 
 func (a *Asset) setName(name string) error {
 	if name == "" {
-		return ecode.ParameterNullError
+		return ecode.AssetNameInvalid
 	}
 	a.name = name
 	return nil
 }
 
-func (a *Asset) Chain() string {
+func (a *Asset) Chain() ChainCode {
 	return a.chain
 }
 
-func (a *Asset) setChain(chain string) error {
+func (a *Asset) setChain(chain ChainCode) error {
 	if a.Chain() != "" {
-		return ecode.ParameterChangeError
+		return ecode.ChainCodeChange
 	}
 	if chain == "" {
-		return ecode.ParameterNullError
+		return ecode.ChainCodeInvalid
 	}
 	a.chain = chain
 	return nil
@@ -114,10 +122,10 @@ func (a *Asset) Identity() string {
 
 func (a *Asset) setIdentity(identity string) error {
 	if a.Identity() != "" {
-		return ecode.ParameterChangeError
+		return ecode.AssetIdentityChange
 	}
 	if identity == "" {
-		return ecode.ParameterNullError
+		return ecode.AssetIdentityInvalid
 	}
 	a.identity = identity
 	return nil
@@ -129,19 +137,19 @@ func (a *Asset) Precession() int64 {
 
 func (a *Asset) setPrecession(precession int64) error {
 	if precession < 0 {
-		return ecode.ParameterInvalidError
+		return ecode.AssetPrecessionInvalid
 	}
 	a.precession = precession
 	return nil
 }
 
-func (a *Asset) Status() Status {
+func (a *Asset) Status() AssetStatus {
 	return a.status
 }
 
-func (a *Asset) setStatus(status Status) error {
+func (a *Asset) setStatus(status AssetStatus) error {
 	if status != AssetStatusOffline && status != AssetStatusOnline {
-		return ecode.ParameterInvalidError
+		return ecode.AssetStatusInvalid
 	}
 	a.status = status
 	return nil
@@ -151,9 +159,28 @@ func (a *Asset) Setting() *AssetSetting {
 	return a.setting
 }
 
-func (a *Asset) SetSetting(setting *AssetSetting) error {
+func (a *Asset) ApplySetting(minDepositAmount, withdrawFee, toHotThreshold decimal.Decimal) (*AssetSetting, error) {
+	setting := NewAssetSetting(
+		minDepositAmount,
+		withdrawFee,
+		toHotThreshold,
+	)
+	if setting == nil {
+		return nil, ecode.AssetSettingInvalid
+	}
 	a.setting = setting
-	return nil
+	return setting, nil
+}
+
+func (a *Asset) DustAmount() decimal.Decimal {
+	if a.Setting() != nil {
+		return a.Setting().MinDepositAmount().Div(decimal.NewFromInt(100))
+	}
+	return decimal.NewFromInt(0)
+}
+
+func (a *Asset) CalculateAmount(amountRaw decimal.Decimal) decimal.Decimal {
+	return amountRaw.Div(decimal.NewFromInt(10).Pow(decimal.NewFromInt(a.Precession())))
 }
 
 func (a *Asset) Offline() {
@@ -182,4 +209,16 @@ func (a *Asset) ToAssetDTO() *AssetDTO {
 		Precession: a.Precession(),
 		Status:     string(a.Status()),
 	}
+}
+
+type AssetDTO struct {
+	Id         int64     `json:"id"`
+	Code       AssetCode `json:"code"`
+	Name       string    `json:"name"`
+	Chain      ChainCode `json:"chain"`
+	Identity   string    `json:"identity"`
+	Precession int64     `json:"precession"`
+	Status     string    `json:"status"`
+
+	Setting *AssetSettingDTO `json:"-"`
 }

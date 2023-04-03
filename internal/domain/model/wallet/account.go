@@ -1,9 +1,12 @@
 package wallet
 
-import "github.com/xlalon/golee/pkg/ecode"
+import (
+	"github.com/xlalon/golee/internal/domain/model"
+	"github.com/xlalon/golee/pkg/ecode"
+)
 
 type Account struct {
-	id int64
+	model.IdentifiedDomainObject
 
 	chain    string
 	address  string
@@ -16,7 +19,7 @@ type Account struct {
 
 func AccountFactory(acctDTO *AccountDTO) *Account {
 	acct := &Account{}
-	if err := acct.setId(acctDTO.Id); err != nil {
+	if err := acct.SetId(acctDTO.Id); err != nil {
 		return nil
 	}
 	if err := acct.setChain(acctDTO.Chain); err != nil {
@@ -41,21 +44,6 @@ func AccountFactory(acctDTO *AccountDTO) *Account {
 		return nil
 	}
 	return acct
-}
-
-func (acct *Account) Id() int64 {
-	return acct.id
-}
-
-func (acct *Account) setId(id int64) error {
-	if acct.Id() != 0 {
-		return ecode.ParameterChangeError
-	}
-	if id <= 0 {
-		return ecode.ParameterInvalidError
-	}
-	acct.id = id
-	return nil
 }
 
 func (acct *Account) Chain() string {

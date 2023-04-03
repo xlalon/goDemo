@@ -7,10 +7,10 @@ import (
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
-func (d *Dao) SaveAssetSetting(chainCode, assetCode string, settings *chainasset.AssetSetting) error {
+func (d *Dao) SaveAssetSetting(chainCode chainasset.ChainCode, assetCode chainasset.AssetCode, settings *chainasset.AssetSetting) error {
 	var createdAt time.Time
 	id := mysql.NextID()
-	if assetSetting, err := d.getAssetSetting(chainCode, assetCode); err == nil && assetSetting != nil {
+	if assetSetting, err := d.getAssetSetting(string(chainCode), string(assetCode)); err == nil && assetSetting != nil {
 		id = assetSetting.ID
 		createdAt = assetSetting.CreatedAt
 	}
@@ -19,24 +19,24 @@ func (d *Dao) SaveAssetSetting(chainCode, assetCode string, settings *chainasset
 			ID:        id,
 			CreatedAt: createdAt,
 		},
-		ChainCode:        chainCode,
-		AssetCode:        assetCode,
+		ChainCode:        string(chainCode),
+		AssetCode:        string(assetCode),
 		MinDepositAmount: settings.MinDepositAmount(),
 		WithdrawFee:      settings.WithdrawFee(),
 		ToHotThreshold:   settings.ToHotThreshold(),
 	}).Error
 }
 
-func (d *Dao) GetAssetSetting(chainCode, assetCode string) (*chainasset.AssetSetting, error) {
-	return d.assetSettingDBToDM(d.getAssetSetting(chainCode, assetCode))
+func (d *Dao) GetAssetSetting(chainCode chainasset.ChainCode, assetCode chainasset.AssetCode) (*chainasset.AssetSetting, error) {
+	return d.assetSettingDBToDM(d.getAssetSetting(string(chainCode), string(assetCode)))
 }
 
 func (d *Dao) GetAssetSettings() ([]*chainasset.AssetSetting, error) {
 	return d.assetSettingsDBToDM(d.getAssetSettings())
 }
 
-func (d *Dao) GetAssetSettingsByChain(chainCode string) ([]*chainasset.AssetSetting, error) {
-	return d.assetSettingsDBToDM(d.getAssetSettingsByChain(chainCode))
+func (d *Dao) GetAssetSettingsByChain(chainCode chainasset.ChainCode) ([]*chainasset.AssetSetting, error) {
+	return d.assetSettingsDBToDM(d.getAssetSettingsByChain(string(chainCode)))
 }
 
 func (d *Dao) getAssetSettings() ([]AssetSetting, error) {

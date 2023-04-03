@@ -21,15 +21,30 @@ func (s *AssetService) GetAssets() (interface{}, error) {
 }
 
 func (s *AssetService) GetAssetsByChain(chainCode string) ([]*chainasset.AssetDTO, error) {
-	return s.assetsToDTOs(s.domainRegistry.chainRepository.GetChainAssets(chainCode))
+	return s.assetsToDTOs(s.domainRegistry.chainRepository.GetChainAssets(chainasset.ChainCode(chainCode)))
 }
 
 func (s *AssetService) SetAssetSettings(assetCode, chainCode string, minDepositAmount, withdrawFee, toHotThreshold decimal.Decimal) error {
-	return s.domainRegistry.chainAssetSvc.SetAssetSettings(assetCode, chainCode, minDepositAmount, withdrawFee, toHotThreshold)
+	cc, ac := chainasset.ChainCode(chainCode), chainasset.AssetCode(assetCode)
+	asset, err := s.domainRegistry.chainRepository.GetAssetByCode(cc, ac)
+	if err != nil {
+		return err
+	}
+	setting, err := asset.ApplySetting(
+		minDepositAmount,
+		withdrawFee,
+		toHotThreshold,
+	)
+	if err != nil {
+		return err
+	}
+
+	return s.domainRegistry.chainRepository.SaveAssetSetting(cc, ac, setting)
 }
 
 func (s *AssetService) GetAssetSettings(chainCode, assetCode string) (*chainasset.AssetSettingDTO, error) {
-	setting, err := s.domainRegistry.chainRepository.GetAssetSetting(chainCode, assetCode)
+	cc, ac := chainasset.ChainCode(chainCode), chainasset.AssetCode(assetCode)
+	setting, err := s.domainRegistry.chainRepository.GetAssetSetting(cc, ac)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			setting = &chainasset.AssetSetting{}
@@ -38,8 +53,8 @@ func (s *AssetService) GetAssetSettings(chainCode, assetCode string) (*chainasse
 		}
 	}
 	settingDTO := setting.ToAssetSettingDTO()
-	settingDTO.ChainCode = chainCode
-	settingDTO.AssetCode = assetCode
+	settingDTO.ChainCode = cc
+	settingDTO.AssetCode = ac
 
 	return settingDTO, nil
 }

@@ -7,43 +7,54 @@ import (
 type Status string
 
 const (
-	TransactionFailed  Status = "FAILED"
-	TransactionPending        = "PENDING"
-	TransactionSuccess        = "SUCCESS"
+	TxnFailed  Status = "FAILED"
+	TxnPending        = "PENDING"
+	TxnSuccess        = "SUCCESS"
 )
 
-type Transaction struct {
-	Chain     Code              `json:"chain"`
-	TxHash    string            `json:"tx_hash"`
-	VOut      int64             `json:"vout"`
-	Status    TransactionStatus `json:"status"`
-	Sender    string            `json:"sender"`
-	Receiver  string            `json:"receiver"`
-	Memo      string            `json:"memo"`
-	Identity  string            `json:"identity"`
-	Amount    decimal.Decimal   `json:"amount"`
-	Height    int64             `json:"height"`
-	Timestamp int64             `json:"timestamp"`
-	Comment   interface{}       `json:"comment"`
+type TxnId struct {
+	Chain  Code
+	TxHash string
+	VOut   int64
 }
 
-type TransactionStatus struct {
-	Result        Status `json:"result"`
-	Confirmations int64  `json:"confirmations"`
+type Receiver struct {
+	Address string
+	Memo    string
+}
+
+type CoinValue struct {
+	Identity string
+	Amount   decimal.Decimal
+}
+
+type TxnStatus struct {
+	Result        Status
+	Confirmations int64
+}
+
+type Transaction struct {
+	TxnId     TxnId
+	Receiver  Receiver
+	CoinValue CoinValue
+	Status    TxnStatus
+	Sender    string
+	Height    int64
+	Timestamp int64
+	Comment   string
 }
 
 type Fee struct {
-	Identity string          `json:"identity"`
-	Amount   decimal.Decimal `json:"amount"`
-	Gas      int64           `json:"gas"`
-	GasPrice decimal.Decimal `json:"gasPrice"`
+	CoinValue CoinValue
+	Gas       int64
+	GasPrice  decimal.Decimal
 }
 
 type Receipt struct {
-	TxHash string `json:"tx_hash"`
-	Fee    Fee    `json:"fee"`
-	Status Status `json:"status"`
-	ErrLog string `json:"err_log"`
+	TxHash string
+	Fee    Fee
+	Status Status
+	ErrLog string
 }
 
 type TransferDTO struct {

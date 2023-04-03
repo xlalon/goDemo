@@ -16,8 +16,6 @@ type Registry struct {
 	depositRepository deposit.DepositRepository
 	walletRepository  wallet.WalletRepository
 
-	chainAssetSvc *chainasset.Service
-
 	onChainService *onchain.Service
 }
 
@@ -44,8 +42,6 @@ func Init(conf *conf.Config) {
 		chainRepository:   chainRepository,
 		depositRepository: depositRepository,
 		walletRepository:  walletRepository,
-
-		chainAssetSvc: chainasset.NewService(chainRepository),
 
 		onChainService: onchain.NewService(),
 	}

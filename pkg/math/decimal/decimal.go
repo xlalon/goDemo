@@ -62,6 +62,10 @@ func (d Decimal) IsZero() bool {
 	return d.Decimal.IsZero()
 }
 
+func (d Decimal) Equal(d2 Decimal) bool {
+	return d.Decimal.Equal(d2.Decimal)
+}
+
 func (d Decimal) GreaterThan(d2 Decimal) bool {
 	return d.Decimal.GreaterThan(d2.Decimal)
 }

@@ -13,7 +13,7 @@ var (
 	once sync.Once
 )
 
-func Init(conf *conf.Config) error {
+func Init(conf *conf.Config) {
 
 	once.Do(func() {
 
@@ -24,6 +24,4 @@ func Init(conf *conf.Config) error {
 		onchain.RegisterChain(waxChain.Code, waxChain.Config, waxChain)
 
 	})
-
-	return nil
 }

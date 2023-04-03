@@ -25,8 +25,6 @@ type Registry struct {
 	depositRepository deposit.DepositRepository
 	walletRepository  wallet.WalletRepository
 
-	chainAssetSvc *chainasset.Service
-
 	onChainSvc *onchain.Service
 }
 
@@ -36,7 +34,7 @@ func Init(server *worker.Server, conf *conf.Config) error {
 }
 
 func initScd(conf *conf.Config) {
-	_ = x.Init(conf.Chain)
+	x.Init(conf.Chain)
 
 	chainRepository := chainRepo.NewDao(&chainRepo.Config{
 		Mysql: conf.Mysql,
@@ -58,8 +56,7 @@ func initScd(conf *conf.Config) {
 		depositRepository: depositRepository,
 		walletRepository:  walletRepository,
 
-		chainAssetSvc: chainasset.NewService(chainRepository),
-		onChainSvc:    onchain.NewService(),
+		onChainSvc: onchain.NewService(),
 	}
 
 	chainScd = chain.NewChain()

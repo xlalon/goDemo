@@ -12,5 +12,5 @@ type DepositRepository interface {
 	GetDeposits(page, limit int64) ([]*Deposit, error)
 
 	SaveIncomeCursor(cursor *IncomeCursor) error
-	GetIncomeCursor(chainCode string) (*IncomeCursor, error)
+	GetIncomeCursor(chainCode, address, label string) (*IncomeCursor, error)
 }

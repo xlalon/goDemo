@@ -35,17 +35,21 @@ func NewAccountFilter(walletRepository wallet.WalletRepository) *AccountFilter {
 
 func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
 
-	chainAddresses := make(map[string][]string)
+	chainAddresses := make(map[string]map[string]bool)
 	for _, dep := range deps {
 		chainCode := dep.Chain()
 		if _, ok := chainAddresses[chainCode]; !ok {
-			chainAddresses[chainCode] = []string{}
+			chainAddresses[chainCode] = make(map[string]bool)
 		}
-		chainAddresses[chainCode] = append(chainAddresses[chainCode], dep.Receiver())
+		chainAddresses[chainCode][dep.Receiver()] = true
 	}
 	// retrieve accounts from repo
 	chainAddressesSelf := make(map[string]map[string]bool)
-	for chainCode, addresses := range chainAddresses {
+	for chainCode, addressesM := range chainAddresses {
+		var addresses []string
+		for address, _ := range addressesM {
+			addresses = append(addresses, address)
+		}
 		accounts, err := af.walletRepository.GetAccountsByChainAddresses(chainCode, addresses)
 		if err != nil {
 			return nil, err
@@ -81,37 +85,28 @@ func NewAmountFilter(chainRepository chainasset.ChainRepository) *AmountFilter {
 }
 
 func (af *AmountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
+	// filter deps that amount not satisfied
 
-	chainIdentities := make(map[string][]string)
-	for _, dep := range deps {
-		if _, ok := chainIdentities[dep.Chain()]; !ok {
-			chainIdentities[dep.Chain()] = []string{}
-		}
-		chainIdentities[dep.Chain()] = append(chainIdentities[dep.Chain()], dep.Identity())
-	}
-	// retrieve identity from repo
-	assetsSelf, err := af.chainRepository.GetAssets()
+	// retrieve assets from repo
+	assets, err := af.chainRepository.GetAssets()
 	if err != nil {
 		return nil, err
 	}
-	chainAssetMinAmount := make(map[string]map[string]decimal.Decimal)
-	chainIdentitiesSelf := make(map[string]map[string]bool)
-	for _, asset := range assetsSelf {
-		if _, ok := chainIdentitiesSelf[asset.Chain()]; !ok {
-			chainIdentitiesSelf[asset.Chain()] = make(map[string]bool)
-		}
-		if asset.Setting() != nil {
-			chainAssetMinAmount[asset.Chain()][asset.Code()] = asset.Setting().MinDepositAmount().Div(decimal.NewFromInt(100))
-		}
-		chainIdentitiesSelf[asset.Chain()][asset.Identity()] = true
-	}
-	// filter deps that identity not our asset
-	var result []*deposit.Deposit
-	for _, dep := range deps {
-		if depositAmount, ok := chainAssetMinAmount[dep.Chain()][dep.Asset()]; ok && depositAmount.GreaterThan(dep.Amount()) {
+	// calculate asset dust amount
+	dustAmounts := make(map[chainasset.ChainCode]map[chainasset.AssetCode]decimal.Decimal)
+	for _, asset := range assets {
+		if asset.Setting() == nil {
 			continue
 		}
-		if _, ok := chainIdentitiesSelf[dep.Chain()][dep.Identity()]; !ok {
+		if _, ok := dustAmounts[asset.Chain()]; !ok {
+			dustAmounts[asset.Chain()] = make(map[chainasset.AssetCode]decimal.Decimal)
+		}
+		dustAmounts[asset.Chain()][asset.Code()] = asset.DustAmount()
+	}
+	var result []*deposit.Deposit
+	for _, dep := range deps {
+		cc, as := chainasset.ChainCode(dep.Chain()), chainasset.AssetCode(dep.Asset())
+		if dustDepAmount, ok := dustAmounts[cc][as]; ok && dep.Amount().LessThan(dustDepAmount) {
 			continue
 		}
 		result = append(result, dep)

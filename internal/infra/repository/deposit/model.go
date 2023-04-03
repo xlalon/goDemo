@@ -8,20 +8,18 @@ import (
 type Deposit struct {
 	mysql.Model
 
-	Chain     string
-	Asset     string
-	TxHash    string
-	Sender    string
-	Receiver  string
-	Memo      string
-	Identity  string
-	Amount    decimal.Decimal
-	AmountRaw decimal.Decimal
-	VOut      int64
-	Status    string
-	Comment   string
-
-	Version int64
+	Chain    string
+	TxHash   string
+	VOut     int64
+	Receiver string
+	Memo     string
+	Asset    string
+	Amount   decimal.Decimal
+	Sender   string
+	Height   int64
+	Comment  string
+	Status   string
+	Version  int64
 }
 
 type IncomeCursor struct {
@@ -29,8 +27,9 @@ type IncomeCursor struct {
 
 	ChainCode string
 	Height    int64
-	TxHash    string
 	Address   string
 	Label     string
+	TxHash    string
+	Direction string
 	Index     int64
 }

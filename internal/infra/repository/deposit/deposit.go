@@ -20,19 +20,18 @@ func (d *Dao) Save(dep *deposit.Deposit) error {
 			ID:        dep.Id(),
 			CreatedAt: createdAt,
 		},
-		Chain:     dep.Chain(),
-		Asset:     dep.Asset(),
-		TxHash:    dep.TxHash(),
-		Sender:    dep.Sender(),
-		Receiver:  dep.Receiver(),
-		Memo:      dep.Memo(),
-		Identity:  dep.Identity(),
-		Amount:    dep.Amount(),
-		AmountRaw: dep.AmountRaw(),
-		VOut:      dep.VOut(),
-		Status:    string(dep.Status()),
-		Comment:   "",
-		Version:   version,
+		Chain:    dep.Chain(),
+		TxHash:   dep.TxHash(),
+		VOut:     dep.VOut(),
+		Receiver: dep.Receiver(),
+		Memo:     dep.Memo(),
+		Asset:    dep.Asset(),
+		Amount:   dep.Amount(),
+		Sender:   dep.Sender(),
+		Height:   dep.Height(),
+		Comment:  dep.Comment(),
+		Status:   string(dep.Status()),
+		Version:  version,
 	})
 	return nil
 }
@@ -46,11 +45,11 @@ func (d *Dao) GetDeposits(page, limit int64) ([]*deposit.Deposit, error) {
 }
 
 func (d *Dao) getDepositById(id int64) (*Deposit, error) {
-	depDB := &Deposit{}
-	if err := d.db.First(depDB, "id = ?", id).Error; err != nil {
+	depDB := Deposit{}
+	if err := d.db.First(&depDB, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
-	return depDB, nil
+	return &depDB, nil
 }
 
 func (d *Dao) getDeposits(page, limit int64) ([]Deposit, error) {
@@ -86,17 +85,17 @@ func (d *Dao) depositDbToDomain(dep *Deposit, err error) (*deposit.Deposit, erro
 		return nil, err
 	}
 	return deposit.DepositFactory(&deposit.DepositDTO{
-		Id:        dep.ID,
-		Chain:     dep.Chain,
-		Asset:     dep.Asset,
-		TxHash:    dep.TxHash,
-		Sender:    dep.Sender,
-		Receiver:  dep.Receiver,
-		Memo:      dep.Memo,
-		Identity:  dep.Identity,
-		Amount:    dep.Amount,
-		AmountRaw: dep.AmountRaw,
-		VOut:      dep.VOut,
-		Status:    deposit.Status(dep.Status),
+		Id:       dep.ID,
+		Chain:    dep.Chain,
+		TxHash:   dep.TxHash,
+		VOut:     dep.VOut,
+		Receiver: dep.Receiver,
+		Memo:     dep.Memo,
+		Asset:    dep.Asset,
+		Amount:   dep.Amount,
+		Sender:   dep.Sender,
+		Height:   dep.Height,
+		Comment:  dep.Comment,
+		Status:   deposit.Status(dep.Status),
 	}), nil
 }

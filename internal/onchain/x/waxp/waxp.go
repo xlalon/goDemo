@@ -46,41 +46,48 @@ func (w *Waxp) GetLatestHeight() (int64, error) {
 }
 
 func (w *Waxp) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
-	var transfers []*onchain.Transaction
+	var txs []*onchain.Transaction
 	json_ := map[string]interface{}{"id": txHash}
 	resp, err := w.nodeClient.Post("/v1/history/get_transaction", json_)
 	if err != nil {
 		fmt.Println(err)
-		return transfers, err
+		return txs, err
 	}
 
-	transfers, err = w.parseTx(resp)
+	txs, err = w.parseTxResponse(resp)
 	if err != nil {
-		return transfers, err
+		return txs, err
 	}
 
-	err = w.updateTransfersStatus(transfers)
+	err = w.updateTxsStatus(txs)
 
-	return transfers, err
+	return txs, err
 }
 
-func (w *Waxp) ScanTxn(xxx interface{}) ([]*onchain.Transaction, error) {
-	return w.ScanTxnByAccount(xxx.(*onchain.Account))
+func (w *Waxp) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+	txs, err := w.scanTxnByAccount(cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	cursor.Index += 10
+
+	return txs, nil
 }
 
-func (w *Waxp) ScanTxnByAccount(account *onchain.Account) ([]*onchain.Transaction, error) {
+func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 
-	var transfers []*onchain.Transaction
+	var txs []*onchain.Transaction
 
 	data := map[string]interface{}{
-		"account_name": account.Address,
-		"pos":          account.Sequence,
+		"account_name": cursor.Account.Address,
+		"pos":          cursor.Index,
 		"offset":       -10,
 	}
 	resp, err := w.nodeClient.Post("/v1/history/get_actions", data)
 	if err != nil {
 		fmt.Println(err)
-		return transfers, err
+		return txs, err
 	}
 
 	for _, actionRaw := range json.JGet(resp, "actions").Array() {
@@ -90,15 +97,16 @@ func (w *Waxp) ScanTxnByAccount(account *onchain.Account) ([]*onchain.Transactio
 		}
 		height := json.JGet(action, "block_num").Int()
 		txHash := json.JGet(action, "action_trace.trx_id").String()
-		if transfer, err := w.parseAct(json.JGet(action, "action_trace.act").String()); transfer != nil && err == nil && transfer.Amount.GreaterThan(decimal.NewFromInt(0)) &&
-			transfer.Receiver == account.Address {
-
-			transfer.TxHash = txHash
-			transfer.Height = height
-			transfers = append(transfers, transfer)
+		if txn, errParsed := w.parseAct(json.JGet(action, "action_trace.act").String()); txn != nil && errParsed == nil && txn.CoinValue.Amount.GreaterThan(decimal.NewFromInt(0)) && txn.Receiver.Address == cursor.Account.Address {
+			txn.TxnId.TxHash = txHash
+			txn.Height = height
+			txs = append(txs, txn)
 		}
 	}
-	return transfers, nil
+
+	cursor.Index += int64(len(txs))
+
+	return txs, nil
 }
 
 func (w *Waxp) NewAccount(label onchain.Label) (*onchain.Account, error) {
@@ -135,26 +143,26 @@ func (w *Waxp) Transfer(reqData *onchain.TransferDTO) (*onchain.Receipt, error) 
 	return &onchain.Receipt{}, nil
 }
 
-func (w *Waxp) parseTx(txResponse string) ([]*onchain.Transaction, error) {
+func (w *Waxp) parseTxResponse(txResponse string) ([]*onchain.Transaction, error) {
 
-	var transfers []*onchain.Transaction
+	var txs []*onchain.Transaction
 
 	receipt := json.JGet(txResponse, "trx.receipt").String()
 	if status := json.JGet(receipt, "status"); status.String() != "executed" {
-		return transfers, fmt.Errorf("tx status not right, expect %s, got %s", "executed", status.String())
+		return txs, fmt.Errorf("tx status not right, expect %s, got %s", "executed", status.String())
 	}
 	height := json.JGet(txResponse, "block_num").Int()
 	txHash := json.JGet(txResponse, "id").String()
 	actions := json.JGet(txResponse, "trx.trx.actions")
 	for _, actionRaw := range actions.Array() {
 		action := actionRaw.String()
-		if transfer, _ := w.parseAct(action); transfer != nil && transfer.Amount.GreaterThan(decimal.NewFromInt(0)) {
-			transfer.TxHash = txHash
-			transfer.Height = height
-			transfers = append(transfers, transfer)
+		if txn, _ := w.parseAct(action); txn != nil && txn.CoinValue.Amount.GreaterThan(decimal.NewFromInt(0)) {
+			txn.TxnId.TxHash = txHash
+			txn.Height = height
+			txs = append(txs, txn)
 		}
 	}
-	return transfers, nil
+	return txs, nil
 }
 
 func (w *Waxp) parseAct(act string) (*onchain.Transaction, error) {
@@ -180,37 +188,44 @@ func (w *Waxp) parseAct(act string) (*onchain.Transaction, error) {
 	sender := json.JGet(data, "from").String()
 	memo := json.JGet(data, "memo").String()
 
-	transfer := &onchain.Transaction{
-		Chain:    w.Code,
-		Identity: amountInfo[1],
-		Sender:   sender,
-		Receiver: receiver,
-		Amount:   amount,
-		VOut:     0,
-		Memo:     memo,
-		Status:   onchain.TransactionStatus{Result: onchain.TransactionPending},
+	txn := &onchain.Transaction{
+		TxnId: onchain.TxnId{
+			Chain:  w.Code,
+			TxHash: "",
+			VOut:   0,
+		},
+		Receiver: onchain.Receiver{
+			Address: receiver,
+			Memo:    memo,
+		},
+		CoinValue: onchain.CoinValue{
+			Identity: amountInfo[1],
+			Amount:   amount,
+		},
+		Sender: sender,
+		Status: onchain.TxnStatus{Result: onchain.TxnPending},
 	}
 
-	return transfer, nil
+	return txn, nil
 }
 
-func (w *Waxp) updateTransfersStatus(transfers []*onchain.Transaction) error {
+func (w *Waxp) updateTxsStatus(txs []*onchain.Transaction) error {
 	latestHeight, _ := w.GetLatestHeight()
-	for _, transfer := range transfers {
-		if transfer.Status.Result == onchain.TransactionFailed {
+	for _, txn := range txs {
+		if txn.Status.Result == onchain.TxnFailed {
 			continue
 		}
-		if transfer.Height == 0 {
-			// update transfer height first
+		if txn.Height == 0 {
+			// update txn height first
 			continue
 		}
-		confirm := latestHeight - transfer.Height
+		confirm := latestHeight - txn.Height
 		if confirm <= 0 {
 			continue
 		}
-		transfer.Status.Confirmations = confirm
+		txn.Status.Confirmations = confirm
 		if confirm >= w.Config.IrreversibleBlock {
-			transfer.Status.Result = onchain.TransactionSuccess
+			txn.Status.Result = onchain.TxnSuccess
 		}
 	}
 	return nil

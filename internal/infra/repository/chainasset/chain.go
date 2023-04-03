@@ -5,59 +5,66 @@ import (
 
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/pkg/database/mysql"
+	"github.com/xlalon/golee/pkg/ecode"
 )
 
 // SaveChain any way better?
-func (d *Dao) SaveChain(chainDM *chainasset.Chain) error {
+func (d *Dao) SaveChain(chain *chainasset.Chain) error {
+	if chain == nil {
+		return ecode.ChainInvalid
+	}
 	var createdAt time.Time
-	chainDB, err := d.getChainById(chainDM.Id())
+	chainDB, err := d.getChainById(chain.Id())
 	if err == nil && chainDB != nil {
 		createdAt = chainDB.CreatedAt
 	}
-	d.db.Model(&Chain{Model: mysql.Model{ID: chainDM.Id()}}).Save(
+	return d.db.Model(&Chain{Model: mysql.Model{ID: chain.Id()}}).Save(
 		&Chain{
 			Model: mysql.Model{
-				ID:        chainDM.Id(),
+				ID:        chain.Id(),
 				CreatedAt: createdAt,
 			},
-			Code:   chainDM.Code(),
-			Name:   chainDM.Name(),
-			Status: string(chainDM.Status()),
-		})
-	if chainDM.Assets() != nil && len(chainDM.Assets()) > 0 {
-		err = d.SaveAssets(chainDM.Assets())
-	}
-	return err
+			Code:   string(chain.Code()),
+			Name:   chain.Name(),
+			Status: string(chain.Status()),
+		}).Error
+	//if chain.Assets() != nil && len(chain.Assets()) > 0 {
+	//	err = d.SaveAssets(chain.Assets())
+	//}
 }
 
 func (d *Dao) GetChains() ([]*chainasset.Chain, error) {
 	return d.chainsDbToDomain(d.getChains())
 }
 
-func (d *Dao) GetChainByCode(chainCode string) (*chainasset.Chain, error) {
-	chainDB, err := d.getChainByCode(chainCode)
+func (d *Dao) GetChainByCode(chainCode chainasset.ChainCode) (*chainasset.Chain, error) {
+	chainDB, err := d.getChainByCode(string(chainCode))
 	if err != nil {
 		return nil, err
 	}
-	assets, err := d.GetChainAssets(chainDB.Code)
+	assets, err := d.GetChainAssets(chainasset.ChainCode(chainDB.Code))
 	if err != nil {
 		return nil, err
 	}
 	return d.chainDbToDomain(chainDB, assets), nil
 }
 
-func (d *Dao) GetChainByCodes(chainCodes []string) ([]*chainasset.Chain, error) {
-	return d.chainsDbToDomain(d.getChainByCodes(chainCodes))
+func (d *Dao) GetChainByCodes(chainCodes []chainasset.ChainCode) ([]*chainasset.Chain, error) {
+	chainCodesStr := make([]string, 0, len(chainCodes))
+	for _, chainCode := range chainCodes {
+		chainCodesStr = append(chainCodesStr, string(chainCode))
+	}
+	return d.chainsDbToDomain(d.getChainByCodes(chainCodesStr))
 }
 
-func (d *Dao) GetAssetChains(assetCode string) ([]*chainasset.Chain, error) {
-	assetsDB, err := d.getAssetsByCode(assetCode)
+func (d *Dao) GetAssetChains(assetCode chainasset.AssetCode) ([]*chainasset.Chain, error) {
+	assetsDB, err := d.getAssetsByCode(string(assetCode))
 	if err != nil {
 		return nil, err
 	}
-	var chainCodes []string
+	var chainCodes []chainasset.ChainCode
 	for _, assetDB := range assetsDB {
-		chainCodes = append(chainCodes, assetDB.ChainCode)
+		chainCodes = append(chainCodes, chainasset.ChainCode(assetDB.ChainCode))
 	}
 	return d.GetChainByCodes(chainCodes)
 }
@@ -100,7 +107,7 @@ func (d *Dao) chainsDbToDomain(chainsDB []Chain, err error) ([]*chainasset.Chain
 	}
 	var chainsDM []*chainasset.Chain
 	for _, chainDB := range chainsDB {
-		assets, err1 := d.GetChainAssets(chainDB.Code)
+		assets, err1 := d.GetChainAssets(chainasset.ChainCode(chainDB.Code))
 		if err1 != nil {
 			return nil, err1
 		}
@@ -118,7 +125,7 @@ func (d *Dao) chainDbToDomain(c *Chain, assets []*chainasset.Asset) *chainasset.
 	return chainasset.ChainFactory(
 		&chainasset.ChainDTO{
 			Id:     c.ID,
-			Code:   c.Code,
+			Code:   chainasset.ChainCode(c.Code),
 			Name:   c.Name,
 			Status: c.Status,
 		},

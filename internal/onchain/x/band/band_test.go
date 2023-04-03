@@ -10,8 +10,8 @@ import (
 
 var (
 	testBandChainConf = &conf.ChainConfig{
-		NodeUrl:         "https://laozi1.bandchain.org/api",
-		ExternalNodeUrl: "https://laozi1.bandchain.org/api",
+		NodeUrl:         "https://band-api.ibs.team/",
+		ExternalNodeUrl: "https://band-api.ibs.team/",
 
 		WalletDepositUrl: "",
 		WalletHotUrl:     "",
@@ -35,7 +35,7 @@ func TestBand_GetLatestHeight(t *testing.T) {
 }
 
 func TestBand_GetTxnByHash(t *testing.T) {
-	tx, err := testBand.GetTxnByHash("8A4FF19A559EE8531D65D9AD99E7E333BF183B6AF273D22FD05E8F7A930192A0")
+	tx, err := testBand.GetTxnByHash("AE4CBD3ED9BD7A7CFDF532D8C241194CB15407D93DB0C35FAFA26A0DF3795AC7")
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -43,7 +43,7 @@ func TestBand_GetTxnByHash(t *testing.T) {
 }
 
 func TestBand_ScanTxn(t *testing.T) {
-	var height int64 = 15031628
+	var height int64 = 15663668
 	txs, err := testBand.ScanTxn(height)
 	if err != nil {
 		fmt.Println("error:", err)

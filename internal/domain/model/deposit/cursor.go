@@ -6,24 +6,30 @@ import (
 
 type IncomeCursor struct {
 	chainCode string
-
-	height int64
-	txHash string
+	height    int64
 	AccountIncomeCursor
 }
 
 type AccountIncomeCursor struct {
-	address string
-	label   string
-	index   int64
+	address   string
+	label     string
+	txHash    string
+	direction string
+	index     int64
 }
 
-func newAccountIncomeCursor(address, label string, index int64) *AccountIncomeCursor {
+func newAccountIncomeCursor(address, label, txHash, direction string, index int64) *AccountIncomeCursor {
 	aic := &AccountIncomeCursor{}
 	if err := aic.SetAddress(address); err != nil {
 		return nil
 	}
 	if err := aic.SetLabel(label); err != nil {
+		return nil
+	}
+	if err := aic.SetTxHash(txHash); err != nil {
+		return nil
+	}
+	if err := aic.SetDirection(direction); err != nil {
 		return nil
 	}
 	if err := aic.SetIndex(index); err != nil {
@@ -32,19 +38,19 @@ func newAccountIncomeCursor(address, label string, index int64) *AccountIncomeCu
 	return aic
 }
 
-func NewIncomeCursor(cursorDTO *IncomeCursorDTO) *IncomeCursor {
+func NewIncomeCursor(chain string, height int64, address, label, txHash, direction string, index int64) *IncomeCursor {
 	cursor := &IncomeCursor{}
-	if err := cursor.SetChainCode(cursorDTO.ChainCode); err != nil {
+	if err := cursor.SetChainCode(chain); err != nil {
 		return nil
 	}
-	if err := cursor.SetHeight(cursorDTO.Height); err != nil {
+	if err := cursor.SetHeight(height); err != nil {
 		return nil
 	}
-	if err := cursor.SetTxHash(cursorDTO.TxHash); err != nil {
+	if err := cursor.SetTxHash(txHash); err != nil {
 		return nil
 	}
-	if cursorDTO.Address != "" || cursorDTO.Label != "" || cursorDTO.Index > 0 {
-		if err := cursor.SetAccountIncomeCursor(cursorDTO.Address, cursorDTO.Label, cursorDTO.Index); err != nil {
+	if address != "" || label != "" || direction != "" || index > 0 {
+		if err := cursor.SetAccountIncomeCursor(newAccountIncomeCursor(address, label, txHash, direction, index)); err != nil {
 			return nil
 		}
 	}
@@ -91,10 +97,8 @@ func (ic *IncomeCursor) GetAccountIncomeCursor() AccountIncomeCursor {
 	return ic.AccountIncomeCursor
 }
 
-func (ic *IncomeCursor) SetAccountIncomeCursor(address, label string, index int64) error {
-	if aic := newAccountIncomeCursor(address, label, index); aic != nil {
-		ic.AccountIncomeCursor = *aic
-	}
+func (ic *IncomeCursor) SetAccountIncomeCursor(ai *AccountIncomeCursor) error {
+	ic.AccountIncomeCursor = *ai
 	return nil
 }
 
@@ -116,6 +120,24 @@ func (aic *AccountIncomeCursor) SetLabel(label string) error {
 	return nil
 }
 
+func (aic *AccountIncomeCursor) TxHash() string {
+	return aic.txHash
+}
+
+func (aic *AccountIncomeCursor) SetTxHash(txHash string) error {
+	aic.txHash = txHash
+	return nil
+}
+
+func (aic *AccountIncomeCursor) Direction() string {
+	return aic.direction
+}
+
+func (aic *AccountIncomeCursor) SetDirection(direction string) error {
+	aic.direction = direction
+	return nil
+}
+
 func (aic *AccountIncomeCursor) Index() int64 {
 	return aic.index
 }
@@ -126,15 +148,4 @@ func (aic *AccountIncomeCursor) SetIndex(index int64) error {
 	}
 	aic.index = index
 	return nil
-}
-
-func (ic *IncomeCursor) ToCursorDTO() *IncomeCursorDTO {
-	return &IncomeCursorDTO{
-		ChainCode: ic.ChainCode(),
-		Height:    ic.Height(),
-		TxHash:    ic.TxHash(),
-		Address:   ic.Address(),
-		Label:     ic.Label(),
-		Index:     ic.Index(),
-	}
 }

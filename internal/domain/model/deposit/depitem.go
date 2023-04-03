@@ -5,138 +5,108 @@ import (
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
-type DepositItem struct {
-	chain    string
-	asset    string
-	txHash   string
-	sender   string
-	receiver string
-	memo     string
-	AmountVO
-	vOut int64
+type TxnId struct {
+	chain  string
+	txHash string
+	vOut   int64
 }
 
-func NewDepositItem(depositDTO *DepositDTO) *DepositItem {
-	depositItem := &DepositItem{}
-	if err := depositItem.setChain(depositDTO.Chain); err != nil {
-		return nil
-	}
-	if err := depositItem.setAsset(depositDTO.Asset); err != nil {
-		return nil
-	}
-	if err := depositItem.setTxHash(depositDTO.TxHash); err != nil {
-		return nil
-	}
-	if err := depositItem.setSender(depositDTO.Sender); err != nil {
-		return nil
-	}
-	if err := depositItem.setReceiver(depositDTO.Receiver); err != nil {
-		return nil
-	}
-	if err := depositItem.setMemo(depositDTO.Memo); err != nil {
-		return nil
-	}
-	if err := depositItem.setAmountInfo(depositDTO.Identity, depositDTO.AmountRaw, depositDTO.Precession, depositDTO.Amount); err != nil {
-		return nil
-	}
-	if err := depositItem.setVOut(depositDTO.VOut); err != nil {
-		return nil
-	}
-	return depositItem
+type Receiver struct {
+	address string
+	memo    string
 }
 
-func (dt *DepositItem) Chain() string {
-	return dt.chain
+type Item struct {
+	txnId     TxnId
+	receiver  Receiver
+	coinValue CoinValue
 }
 
-func (dt *DepositItem) setChain(chain string) error {
-	if dt.chain != "" {
-		return ecode.ParameterChangeError
+func NewDepositItem(depositDTO *DepositDTO) *Item {
+	item := &Item{}
+	if err := item.setTxnId(depositDTO.Chain, depositDTO.TxHash, depositDTO.VOut); err != nil {
+		return nil
 	}
-	dt.chain = chain
+	if err := item.setReceiver(depositDTO.Receiver, depositDTO.Memo); err != nil {
+		return nil
+	}
+	if err := item.setCoinValue(depositDTO.Asset, depositDTO.Amount); err != nil {
+		return nil
+	}
+	return item
+}
+
+func (i *Item) Chain() string {
+	return i.txnId.chain
+}
+
+func (i *Item) TxHash() string {
+	return i.txnId.txHash
+}
+
+func (i *Item) VOut() int64 {
+	return i.txnId.vOut
+}
+
+func (i *Item) setTxnId(chain, txHash string, vOut int64) error {
+	if i.Chain() != "" || i.TxHash() != "" || i.VOut() > 0 {
+		return ecode.DepositTxIdChange
+	}
+	if chain == "" {
+		return ecode.DepositTxIdChainInvalid
+	}
+	if txHash == "" {
+		return ecode.DepositTxIdHashInvalid
+	}
+	if vOut < 0 {
+		return ecode.DepositTxIdVOutInvalid
+	}
+	i.txnId = TxnId{
+		chain:  chain,
+		txHash: txHash,
+		vOut:   vOut,
+	}
 	return nil
 }
 
-func (dt *DepositItem) Asset() string {
-	return dt.asset
+func (i *Item) Receiver() string {
+	return i.receiver.address
 }
 
-func (dt *DepositItem) setAsset(asset string) error {
-	if dt.asset != "" {
-		return ecode.ParameterChangeError
+func (i *Item) Memo() string {
+	return i.receiver.memo
+}
+
+func (i *Item) setReceiver(address, memo string) error {
+	if i.Receiver() != "" || i.Memo() != "" {
+		return ecode.DepositAssetInvalid
 	}
-	dt.asset = asset
+	if address == "" {
+		return ecode.DepositReceiverAddressInvalid
+	}
+	i.receiver = Receiver{
+		address: address,
+		memo:    memo,
+	}
 	return nil
 }
 
-func (dt *DepositItem) TxHash() string {
-	return dt.txHash
+func (i *Item) Asset() string {
+	return i.coinValue.Asset()
 }
 
-func (dt *DepositItem) setTxHash(txHash string) error {
-	if dt.txHash != "" {
-		return ecode.ParameterChangeError
+func (i *Item) Amount() decimal.Decimal {
+	return i.coinValue.Amount()
+}
+
+func (i *Item) setCoinValue(asset string, amount decimal.Decimal) error {
+	if i.Asset() != "" || i.Amount().GreaterThanZero() {
+		return ecode.DepositCoinValueChange
 	}
-	dt.txHash = txHash
-	return nil
-}
-
-func (dt *DepositItem) Sender() string {
-	return dt.sender
-}
-
-func (dt *DepositItem) setSender(sender string) error {
-	if dt.sender != "" {
-		return ecode.ParameterChangeError
+	coinValue := NewCoinValue(asset, amount)
+	if coinValue == nil {
+		return ecode.DepositCoinValueInvalid
 	}
-	dt.sender = sender
-	return nil
-}
-
-func (dt *DepositItem) Receiver() string {
-	return dt.receiver
-}
-
-func (dt *DepositItem) setReceiver(receiver string) error {
-	if dt.receiver != "" {
-		return ecode.ParameterChangeError
-	}
-	dt.receiver = receiver
-	return nil
-}
-
-func (dt *DepositItem) Memo() string {
-	return dt.memo
-}
-
-func (dt *DepositItem) setMemo(memo string) error {
-	if dt.memo != "" {
-		return ecode.ParameterChangeError
-	}
-	dt.memo = memo
-	return nil
-}
-
-func (dt *DepositItem) AmountInfo() AmountVO {
-	return dt.AmountVO
-}
-
-func (dt *DepositItem) setAmountInfo(identity string, amountRaw decimal.Decimal, precession int64, amount decimal.Decimal) error {
-	if dt.amount.GreaterThanZero() || dt.amountRaw.GreaterThanZero() || dt.identity != "" || dt.precession > 0 {
-		return ecode.ParameterChangeError
-	}
-	dt.AmountVO = *NewAmountVO(identity, amountRaw, precession, amount)
-	return nil
-}
-
-func (dt *DepositItem) VOut() int64 {
-	return dt.vOut
-}
-
-func (dt *DepositItem) setVOut(vOut int64) error {
-	if dt.vOut > 0 {
-		return ecode.ParameterChangeError
-	}
-	dt.vOut = vOut
+	i.coinValue = *coinValue
 	return nil
 }

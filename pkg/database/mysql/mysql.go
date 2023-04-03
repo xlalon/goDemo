@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	DNS string `yaml:"dns"`
+	DSN string `yaml:"dsn"`
 }
 
 type Model struct {

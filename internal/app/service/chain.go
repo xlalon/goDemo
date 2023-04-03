@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/onchain"
+	"github.com/xlalon/golee/pkg/ecode"
 )
 
 type ChainService struct {
@@ -17,7 +18,7 @@ func (s *ChainService) NewChain(code, name string) (interface{}, error) {
 
 	chain := chainasset.ChainFactory(&chainasset.ChainDTO{
 		Id:     s.domainRegistry.chainRepository.NextId(),
-		Code:   code,
+		Code:   chainasset.ChainCode(code),
 		Name:   name,
 		Status: chainasset.ChainStatusOffline,
 	}, nil)
@@ -26,19 +27,33 @@ func (s *ChainService) NewChain(code, name string) (interface{}, error) {
 		return nil, err
 	}
 
-	chain, err := s.domainRegistry.chainRepository.GetChainByCode(code)
+	chain, err := s.domainRegistry.chainRepository.GetChainByCode(chainasset.ChainCode(code))
 	if err != nil {
 		return nil, err
 	}
 	return chain.ToChainDTO(), nil
 }
 
-func (s *AssetService) AddAsset(chainCode string, assetCode, assetName, identity string, precession int64) error {
-	return s.domainRegistry.chainAssetSvc.AddAsset(chainCode, assetCode, assetName, identity, precession)
+func (s *AssetService) RegisterAsset(chainCode string, assetCode, assetName, identity string, precession int64) error {
+	chain, err := s.domainRegistry.chainRepository.GetChainByCode(chainasset.ChainCode(chainCode))
+	if err != nil {
+		return err
+	}
+	if chain == nil {
+		return ecode.ChainInvalid
+	}
+	asset, err := chain.RegisterAsset(chainasset.AssetCode(assetCode), assetName, identity, precession)
+	if err != nil {
+		return err
+	}
+	if asset == nil {
+		return ecode.AssetInvalid
+	}
+	return s.domainRegistry.chainRepository.SaveAsset(asset)
 }
 
 func (s *ChainService) GetChainByCode(chainCode string) (interface{}, error) {
-	return s.chainToDTO(s.domainRegistry.chainRepository.GetChainByCode(chainCode))
+	return s.chainToDTO(s.domainRegistry.chainRepository.GetChainByCode(chainasset.ChainCode(chainCode)))
 }
 
 func (s *ChainService) GetChains() (interface{}, error) {

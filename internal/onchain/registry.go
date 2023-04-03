@@ -25,6 +25,7 @@ type registry struct {
 }
 
 func (r *registry) addChain(code Code, chainConfig *conf.ChainConfig, api Chainer) {
+	code = code.Normalize()
 	if _, ok := r.chainToApis[code]; ok {
 		panic(fmt.Errorf("chain %s already registered", code))
 	}
@@ -48,11 +49,15 @@ func (r *registry) allChainToApi() map[Code]Chainer {
 }
 
 func (r *registry) getChainApi(code Code) (Chainer, bool) {
-	api, ok := r.chainToApis[code]
+	api, ok := r.chainToApis[code.Normalize()]
 	return api, ok
 }
 
 func (r *registry) getChainConfig(code Code) (*conf.ChainConfig, bool) {
-	chainConfig, ok := r.chainToConfigs[code]
-	return chainConfig, ok
+	chainConfig, ok := r.chainToConfigs[code.Normalize()]
+	if !ok || chainConfig == nil {
+		return nil, ok
+	}
+	chainConfigCopy := *chainConfig
+	return &chainConfigCopy, ok
 }
