@@ -7,26 +7,13 @@ import (
 
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
-	"github.com/xlalon/golee/internal/domain/model/wallet"
 	"github.com/xlalon/golee/internal/onchain"
 )
 
-type Income struct {
-	chainRepo   chainasset.ChainRepository
-	depositRepo deposit.DepositRepository
-	walletRepo  wallet.WalletRepository
+type Income struct{}
 
-	onchainSvc *onchain.Service
-}
-
-func NewIncome(chainRepo chainasset.ChainRepository, depositRepo deposit.DepositRepository, walletRepo wallet.WalletRepository) *Income {
-	return &Income{
-		chainRepo:   chainRepo,
-		depositRepo: depositRepo,
-		walletRepo:  walletRepo,
-
-		onchainSvc: onchain.NewService(),
-	}
+func NewIncome() *Income {
+	return &Income{}
 }
 
 func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
@@ -50,7 +37,6 @@ func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
 	}
 
 	if err = i.saveIncomeCursor(cursor); err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -60,7 +46,7 @@ func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
 func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error) {
 	var deps []*deposit.Deposit
 
-	cApi, ok := i.onchainSvc.GetChainApi(cursor.Chain)
+	cApi, ok := DomainRegistry.OnChainSvc.GetChainApi(cursor.Chain)
 	if !ok {
 		return deps, fmt.Errorf("chain %s not found", cursor.Chain)
 	}
@@ -70,7 +56,7 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 		return deps, err
 	}
 
-	assets, err := i.chainRepo.GetChainAssets(chainasset.ChainCode(cursor.Chain))
+	assets, err := DomainRegistry.ChainRepository.GetChainAssets(chainasset.ChainCode(cursor.Chain))
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +72,7 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 		}
 		amount := asset.CalculateAmount(txn.CoinValue.Amount)
 		depDTO := &deposit.DepositDTO{
-			Id:       i.depositRepo.NextId(),
+			Id:       DomainRegistry.DepositRepository.NextId(),
 			Chain:    string(txn.TxnId.Chain),
 			TxHash:   txn.TxnId.TxHash,
 			VOut:     txn.TxnId.VOut,
@@ -111,8 +97,8 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 
 func (i *Income) filterDeposits(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
 	filters := []Filterer{
-		NewAmountFilter(i.chainRepo),
-		NewAccountFilter(i.walletRepo),
+		NewAmountFilter(),
+		NewAccountFilter(),
 	}
 	result := deps
 	var err error
@@ -128,7 +114,7 @@ func (i *Income) filterDeposits(deps []*deposit.Deposit) ([]*deposit.Deposit, er
 
 func (i *Income) saveDeposits(deps []*deposit.Deposit) error {
 	for _, dep := range deps {
-		if err := i.depositRepo.Save(dep); err != nil {
+		if err := DomainRegistry.DepositRepository.Save(dep); err != nil {
 			return err
 		}
 	}
@@ -137,14 +123,21 @@ func (i *Income) saveDeposits(deps []*deposit.Deposit) error {
 
 func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *onchain.Cursor {
 	address, label := "", onchain.AccountDeposit
-	chainConf, exist := i.onchainSvc.GetChainConfig(onchain.Code(chainCode))
+	chainConf, exist := DomainRegistry.OnChainSvc.GetChainConfig(onchain.Code(chainCode))
 	if exist {
 		address = chainConf.DepositAddress
 	}
-	cursor, err := i.depositRepo.GetIncomeCursor(string(chainCode), address, string(label))
+	cursor, err := DomainRegistry.DepositRepository.GetIncomeCursor(string(chainCode), address, string(label))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			cursor = deposit.NewIncomeCursor(string(chainCode), 0, "", "", "", "", 0)
+			cursor = deposit.NewIncomeCursor(
+				string(chainCode),
+				0,
+				address,
+				string(label),
+				"",
+				string(onchain.CursorDirectionAsc),
+				0)
 		}
 		return nil
 	}
@@ -160,7 +153,7 @@ func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *onchain.Cursor {
 }
 
 func (i *Income) saveIncomeCursor(onChainCursor *onchain.Cursor) error {
-	return i.depositRepo.SaveIncomeCursor(
+	return DomainRegistry.DepositRepository.SaveIncomeCursor(
 		deposit.NewIncomeCursor(
 			string(onChainCursor.Chain),
 			onChainCursor.Height,

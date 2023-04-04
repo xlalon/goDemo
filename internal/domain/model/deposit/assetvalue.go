@@ -5,13 +5,13 @@ import (
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
-type CoinValue struct {
+type AssetValue struct {
 	asset  string
 	amount decimal.Decimal
 }
 
-func NewCoinValue(asset string, amount decimal.Decimal) *CoinValue {
-	coinValue := &CoinValue{}
+func NewAssetValue(asset string, amount decimal.Decimal) *AssetValue {
+	coinValue := &AssetValue{}
 	if err := coinValue.setAsset(asset); err != nil {
 		return nil
 	}
@@ -21,11 +21,11 @@ func NewCoinValue(asset string, amount decimal.Decimal) *CoinValue {
 	return coinValue
 }
 
-func (cv *CoinValue) Asset() string {
+func (cv *AssetValue) Asset() string {
 	return cv.asset
 }
 
-func (cv *CoinValue) setAsset(asset string) error {
+func (cv *AssetValue) setAsset(asset string) error {
 	if cv.asset != "" {
 		return ecode.DepositAssetChange
 	}
@@ -36,11 +36,11 @@ func (cv *CoinValue) setAsset(asset string) error {
 	return nil
 }
 
-func (cv *CoinValue) Amount() decimal.Decimal {
+func (cv *AssetValue) Amount() decimal.Decimal {
 	return cv.amount
 }
 
-func (cv *CoinValue) setAmount(amount decimal.Decimal) error {
+func (cv *AssetValue) setAmount(amount decimal.Decimal) error {
 	if cv.amount.GreaterThanZero() {
 		return ecode.DepositAmountChange
 	}

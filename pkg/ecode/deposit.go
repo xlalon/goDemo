@@ -15,4 +15,7 @@ var (
 	DepositTxIdChainInvalid       = New(60000012)
 	DepositTxIdHashInvalid        = New(60000013)
 	DepositTxIdVOutInvalid        = New(60000014)
+
+	CursorInvalid = New(60010001)
+	CursorChange  = New(60010002)
 )

@@ -90,7 +90,8 @@ func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction,
 		return txs, err
 	}
 
-	for _, actionRaw := range json.JGet(resp, "actions").Array() {
+	actionsArray := json.JGet(resp, "actions").Array()
+	for _, actionRaw := range actionsArray {
 		action := actionRaw.String()
 		if json.JGet(action, "action_trace.action_ordinal").Int() < 3 {
 			continue
@@ -104,7 +105,7 @@ func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction,
 		}
 	}
 
-	cursor.Index += int64(len(txs))
+	cursor.Index += int64(len(actionsArray))
 
 	return txs, nil
 }

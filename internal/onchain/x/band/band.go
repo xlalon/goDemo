@@ -3,7 +3,6 @@ package band
 import (
 	"errors"
 	"fmt"
-	"github.com/xlalon/golee/pkg/math/compare"
 	"net/url"
 	"strconv"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/xlalon/golee/pkg/json"
 	"github.com/xlalon/golee/pkg/math/decimal"
 	"github.com/xlalon/golee/pkg/math/rand"
+	"github.com/xlalon/golee/pkg/math/sort"
 	"github.com/xlalon/golee/pkg/net/http/client"
 )
 
@@ -36,7 +36,7 @@ func New(conf *conf.ChainConfig) *Band {
 				Headers: url.Values{"Content-Type": []string{"application/json"}},
 				Timeout: 30,
 			}),
-		maxScanHeightRange: 1,
+		maxScanHeightRange: 2,
 	}
 }
 
@@ -76,7 +76,7 @@ func (b *Band) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 		cursor.Height = latestHeight
 		return txs, nil
 	}
-	maxHeight := compare.Min([]int64{latestHeight, cursor.Height + b.maxScanHeightRange})
+	maxHeight := sort.Min([]int64{latestHeight, cursor.Height + b.maxScanHeightRange})
 	for height := cursor.Height + 1; height < maxHeight+1; height++ {
 		_txs, errScan := b.scanTxnByBlock(height)
 		if errScan != nil {

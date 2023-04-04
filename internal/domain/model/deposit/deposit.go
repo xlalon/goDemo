@@ -76,11 +76,11 @@ func (d *Deposit) Memo() string {
 }
 
 func (d *Deposit) Asset() string {
-	return d.core.coinValue.Asset()
+	return d.core.assetValue.Asset()
 }
 
 func (d *Deposit) Amount() decimal.Decimal {
-	return d.core.coinValue.Amount()
+	return d.core.assetValue.Amount()
 }
 
 func (d *Deposit) Sender() string {

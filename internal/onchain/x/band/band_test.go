@@ -2,6 +2,7 @@ package band
 
 import (
 	"fmt"
+	"github.com/xlalon/golee/internal/onchain"
 	"testing"
 
 	"github.com/xlalon/golee/internal/onchain/conf"
@@ -20,7 +21,7 @@ var (
 		IrreversibleBlock: 30,
 
 		SupportMemo:    true,
-		DepositAddress: "band1ggq8us6lh4c8hr4624xnrlud6q5lqhklakysnd",
+		DepositAddress: "band14fzetz7kn6wkuu0s0wv0lfmu795pl0wy3hesvu",
 		HotAddress:     "band14fzetz7kn6wkuu0s0wv0lfmu795pl0wy3hesvu",
 	}
 	testBand = New(testBandChainConf)
@@ -43,8 +44,9 @@ func TestBand_GetTxnByHash(t *testing.T) {
 }
 
 func TestBand_ScanTxn(t *testing.T) {
-	var height int64 = 15663668
-	txs, err := testBand.ScanTxn(height)
+	cursor := onchain.NewCursor(
+		"BAND", 15663667, testBandChainConf.DepositAddress, onchain.AccountDeposit, "", onchain.CursorDirectionAsc, 0)
+	txs, err := testBand.ScanTxn(cursor)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -66,7 +68,7 @@ func TestBand_NewAccount(t *testing.T) {
 }
 
 func TestBand_GetAccount(t *testing.T) {
-	acct, err := testBand.GetAccount("band1dkl8wga94803qygwdspwa5kxdfyjpt8zr0uzh9")
+	acct, err := testBand.GetAccount(testBandChainConf.DepositAddress)
 	if err != nil {
 		fmt.Println("error:", err)
 	}

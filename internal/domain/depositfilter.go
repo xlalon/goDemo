@@ -3,7 +3,6 @@ package domain
 import (
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
-	"github.com/xlalon/golee/internal/domain/model/wallet"
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
@@ -24,13 +23,10 @@ func (f *FilterSpecification) Satisfied(deps []*deposit.Deposit) ([]*deposit.Dep
 
 type AccountFilter struct {
 	FilterSpecification
-	walletRepository wallet.WalletRepository
 }
 
-func NewAccountFilter(walletRepository wallet.WalletRepository) *AccountFilter {
-	return &AccountFilter{
-		walletRepository: walletRepository,
-	}
+func NewAccountFilter() *AccountFilter {
+	return &AccountFilter{}
 }
 
 func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
@@ -47,10 +43,10 @@ func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit,
 	chainAddressesSelf := make(map[string]map[string]bool)
 	for chainCode, addressesM := range chainAddresses {
 		var addresses []string
-		for address, _ := range addressesM {
+		for address := range addressesM {
 			addresses = append(addresses, address)
 		}
-		accounts, err := af.walletRepository.GetAccountsByChainAddresses(chainCode, addresses)
+		accounts, err := DomainRegistry.WalletRepository.GetAccountsByChainAddresses(chainCode, addresses)
 		if err != nil {
 			return nil, err
 		}
@@ -75,20 +71,17 @@ func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit,
 
 type AmountFilter struct {
 	FilterSpecification
-	chainRepository chainasset.ChainRepository
 }
 
-func NewAmountFilter(chainRepository chainasset.ChainRepository) *AmountFilter {
-	return &AmountFilter{
-		chainRepository: chainRepository,
-	}
+func NewAmountFilter() *AmountFilter {
+	return &AmountFilter{}
 }
 
 func (af *AmountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
 	// filter deps that amount not satisfied
 
 	// retrieve assets from repo
-	assets, err := af.chainRepository.GetAssets()
+	assets, err := DomainRegistry.ChainRepository.GetAssets()
 	if err != nil {
 		return nil, err
 	}

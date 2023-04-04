@@ -1,23 +1,24 @@
 package service
 
 import (
+	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
 )
 
 type DepositService struct {
-	domainRegistry *Registry
+	Service
 }
 
 func NewDepositService() *DepositService {
-	return &DepositService{DomainRegistry}
+	return &DepositService{Service{DomainRegistry: domain.DomainRegistry}}
 }
 
 func (d *DepositService) GetDepositById(id int64) (interface{}, error) {
-	return d.depositDMToDTO(d.domainRegistry.depositRepository.GetDepositById(id))
+	return d.depositDMToDTO(d.DomainRegistry.DepositRepository.GetDepositById(id))
 }
 
 func (d *DepositService) GetDeposits(page, limit int64) (interface{}, error) {
-	return d.depositsDMToDTOs(d.domainRegistry.depositRepository.GetDeposits(page, limit))
+	return d.depositsDMToDTOs(d.DomainRegistry.DepositRepository.GetDeposits(page, limit))
 }
 
 func (d *DepositService) depositDMToDTO(dep *deposit.Deposit, err error) (*deposit.DepositDTO, error) {

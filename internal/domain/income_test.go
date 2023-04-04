@@ -38,11 +38,7 @@ var (
 			Redis: testRedisConf,
 		},
 	})
-	testIncome = NewIncome(
-		testRepository.ChainRepository(),
-		testRepository.DepositRepository(),
-		testRepository.WalletRepository(),
-	)
+	testIncome = NewIncome()
 )
 
 func TestMain(m *testing.M) {
@@ -71,6 +67,7 @@ func TestMain(m *testing.M) {
 			HotAddress:        "",
 		},
 	})
+	Init(testRepository.ChainRepository(), testRepository.DepositRepository(), testRepository.WalletRepository())
 	os.Exit(m.Run())
 }
 

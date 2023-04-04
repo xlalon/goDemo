@@ -1,21 +1,22 @@
 package service
 
 import (
+	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/domain/model/wallet"
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
 type WalletService struct {
-	domainRegistry *Registry
+	Service
 }
 
 func NewWalletService() *WalletService {
-	return &WalletService{DomainRegistry}
+	return &WalletService{Service{DomainRegistry: domain.DomainRegistry}}
 }
 
 func (s *WalletService) NewAccount(chain, label string) (*wallet.AccountDTO, error) {
-	chainRpc, _ := s.domainRegistry.onChainService.GetChainApi(onchain.Code(chain))
+	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chain))
 	acctNew, err := chainRpc.NewAccount(onchain.Label(label))
 	if err != nil || acctNew == nil {
 		return nil, err
@@ -30,10 +31,10 @@ func (s *WalletService) NewAccount(chain, label string) (*wallet.AccountDTO, err
 		Sequence: 0,
 		Balances: nil,
 	})
-	if err1 := s.domainRegistry.walletRepository.Save(acct); err1 != nil {
+	if err1 := s.DomainRegistry.WalletRepository.Save(acct); err1 != nil {
 		return nil, err1
 	}
-	account, err := s.domainRegistry.walletRepository.GetAccountByChainAddress(chain, acctNew.Address)
+	account, err := s.DomainRegistry.WalletRepository.GetAccountByChainAddress(chain, acctNew.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -42,11 +43,11 @@ func (s *WalletService) NewAccount(chain, label string) (*wallet.AccountDTO, err
 }
 
 func (s *WalletService) GetAccount(chain, address string) (*wallet.AccountDTO, error) {
-	acctDM, err := s.domainRegistry.walletRepository.GetAccountByChainAddress(chain, address)
+	acctDM, err := s.DomainRegistry.WalletRepository.GetAccountByChainAddress(chain, address)
 	if err != nil {
 		return nil, err
 	}
-	chainRpc, _ := s.domainRegistry.onChainService.GetChainApi(onchain.Code(chain))
+	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chain))
 	acctOX, err := chainRpc.GetAccount(acctDM.Address())
 	if err != nil {
 		return nil, err
@@ -80,11 +81,11 @@ func (s *WalletService) GetAccountBalance(chain, address string) ([]*wallet.Bala
 }
 
 func (s *WalletService) GetAccountsByChain(chain string) ([]*wallet.AccountDTO, error) {
-	return s.accountsToDTOs(s.domainRegistry.walletRepository.GetAccountsByChain(chain))
+	return s.accountsToDTOs(s.DomainRegistry.WalletRepository.GetAccountsByChain(chain))
 }
 
 func (s *WalletService) GetAccountsByChainAddresses(chain string, addresses []string) ([]*wallet.AccountDTO, error) {
-	return s.accountsToDTOs(s.domainRegistry.walletRepository.GetAccountsByChainAddresses(chain, addresses))
+	return s.accountsToDTOs(s.DomainRegistry.WalletRepository.GetAccountsByChainAddresses(chain, addresses))
 }
 
 func (s *WalletService) accountToDTO(account *wallet.Account, err error) (*wallet.AccountDTO, error) {

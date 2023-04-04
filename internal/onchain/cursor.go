@@ -9,12 +9,14 @@ const (
 
 type Cursor struct {
 	Chain Code
+
 	// scan by height range
 	Height int64
+
 	// scan by account
 	Account   *Account
 	TxHash    string
-	Direction Direction //DESC
+	Direction Direction // ASC & DESC
 	Index     int64
 }
 

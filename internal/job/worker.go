@@ -1,15 +1,13 @@
 package job
 
 import (
-	"github.com/xlalon/golee/internal/domain/model/chainasset"
-	"github.com/xlalon/golee/internal/domain/model/deposit"
-	"github.com/xlalon/golee/internal/domain/model/wallet"
-	chainRepo "github.com/xlalon/golee/internal/infra/repository/chainasset"
-	depositRepo "github.com/xlalon/golee/internal/infra/repository/deposit"
-	walletRepo "github.com/xlalon/golee/internal/infra/repository/wallet"
+	"github.com/xlalon/golee/internal/domain"
+	"github.com/xlalon/golee/internal/infra/repository"
+	rchainasset "github.com/xlalon/golee/internal/infra/repository/chainasset"
+	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
+	rwallet "github.com/xlalon/golee/internal/infra/repository/wallet"
 	"github.com/xlalon/golee/internal/job/conf"
 	"github.com/xlalon/golee/internal/job/scheduler/chain"
-	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/internal/onchain/x"
 	"github.com/xlalon/golee/pkg/job/worker"
 )
@@ -18,47 +16,32 @@ var (
 	chainScd *chain.Chain
 )
 
-var DomainRegistry = &Registry{}
-
-type Registry struct {
-	chainRepository   chainasset.ChainRepository
-	depositRepository deposit.DepositRepository
-	walletRepository  wallet.WalletRepository
-
-	onChainSvc *onchain.Service
-}
-
 func Init(server *worker.Server, conf *conf.Config) error {
-	initScd(conf)
+	x.Init(conf.Chain)
+	initDomain(conf)
+	initSchedules()
 	return registerTask(server)
 }
 
-func initScd(conf *conf.Config) {
-	x.Init(conf.Chain)
-
-	chainRepository := chainRepo.NewDao(&chainRepo.Config{
-		Mysql: conf.Mysql,
-		Redis: conf.Redis,
+func initDomain(conf *conf.Config) {
+	_registry := repository.NewRegistry(&repository.Config{
+		Chain: &rchainasset.Config{
+			Mysql: conf.Mysql,
+			Redis: conf.Redis,
+		},
+		Deposit: &rdeposit.Config{
+			Mysql: conf.Mysql,
+			Redis: conf.Redis,
+		},
+		Wallet: &rwallet.Config{
+			Mysql: conf.Mysql,
+			Redis: conf.Redis,
+		},
 	})
+	domain.Init(_registry.ChainRepository(), _registry.DepositRepository(), _registry.WalletRepository())
+}
 
-	depositRepository := depositRepo.NewDao(&depositRepo.Config{
-		Mysql: conf.Mysql,
-		Redis: conf.Redis,
-	})
-
-	walletRepository := walletRepo.NewDao(&walletRepo.Config{
-		Mysql: conf.Mysql,
-		Redis: conf.Redis,
-	})
-
-	DomainRegistry = &Registry{
-		chainRepository:   chainRepository,
-		depositRepository: depositRepository,
-		walletRepository:  walletRepository,
-
-		onChainSvc: onchain.NewService(),
-	}
-
+func initSchedules() {
 	chainScd = chain.NewChain()
 }
 

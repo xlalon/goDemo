@@ -44,11 +44,9 @@ func TestWaxp_GetTxnByHash(t *testing.T) {
 }
 
 func TestWaxp_ScanTxn(t *testing.T) {
-	acct := &onchain.Account{
-		Chain:   "WAX",
-		Address: "coinex111111",
-	}
-	txs, err := testWaxp.ScanTxn(acct)
+	cursor := onchain.NewCursor(
+		"WAX", 0, testWaxpChainConf.DepositAddress, onchain.AccountDeposit, "", "", 0)
+	txs, err := testWaxp.ScanTxn(cursor)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -70,7 +68,7 @@ func TestWaxp_NewAccount(t *testing.T) {
 }
 
 func TestWaxp_GetAccount(t *testing.T) {
-	acct, err := testWaxp.GetAccount("")
+	acct, err := testWaxp.GetAccount(testWaxpChainConf.DepositAddress)
 	if err != nil {
 		fmt.Println("error:", err)
 	}

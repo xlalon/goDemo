@@ -1,9 +1,9 @@
-package compare
+package sort
 
 import "math"
 
 func Max(values []int64) int64 {
-	var maxValue int64
+	var maxValue int64 = math.MinInt64
 	for _, value := range values {
 		if value > maxValue {
 			maxValue = value

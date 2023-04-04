@@ -1,22 +1,23 @@
 package chain
 
 import (
+	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/pkg/ecode"
 )
 
 type Chain struct {
-	onchainSvc *onchain.Service
+	DomainRegistry *domain.Registry
 }
 
 func NewChain() *Chain {
 	return &Chain{
-		onchainSvc: onchain.NewService(),
+		DomainRegistry: domain.DomainRegistry,
 	}
 }
 
 func (c *Chain) GetHeight(code string) (int64, error) {
-	cApi, ok := c.onchainSvc.GetChainApi(onchain.Code(code))
+	cApi, ok := c.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(code))
 	if !ok {
 		return 0, ecode.ChainNotFound
 	}

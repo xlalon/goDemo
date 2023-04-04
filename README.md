@@ -49,14 +49,14 @@
 
 ---
 
-| package | desc          |
-|---------|---------------|
-| app     | application   |
-| domain  | domain models |
-| infra   | infra         |
-| job     | crontab       |
-| onchain | onchain ACL   |
-| pkg     | utils         |
+| package | desc        |
+|---------|-------------|
+| app     | application |
+| domain  | domain      |
+| infra   | infra       |
+| job     | crontab     |
+| onchain | onchain ACL |
+| pkg     | utils       |
 
 
 ## Structure
@@ -64,21 +64,21 @@
 ---
 
 ```
-      -------------------                 ------------
-      |    Interface    |                 |   Job    |
-      -------------------                 ------------
-         ↑            ↓                        |
-         |          -------------------        |
-         |          |     Service     |        |
-         |          -------------------        |
-         |             ↑           ↓           ↓
-         |             |        -------------------
-         |             |        |      Domain     |
-         |             |        -------------------
-         |             |                 ↑
-      ----------------------------------------------
-      |              Infrastructure                |
-      ----------------------------------------------
+      -------------------                   ------------------
+      |    Interface    |                   |       Job      |
+      -------------------                   ------------------
+         ↑            ↓                        |         ↑
+         |          -------------------        |         |
+         |          |     Service     |        |         |
+         |          -------------------        |         |
+         |             ↑           ↓           ↓         |
+         |             |        -------------------      |
+         |             |        |      Domain     |      |
+         |             |        -------------------      |
+         |             |                 ↑               |
+      ---------------------------------------------------------
+      |                     Infrastructure                    |
+      ---------------------------------------------------------
 ```
 
 ## Run Service
@@ -92,7 +92,7 @@ debug: true
 server:
   address: 0.0.0.0:6668
 mysql:
-  dns: user:password@tcp(127.0.0.1:3306)/db_name?charset=utf8mb4&parseTime=True&loc=Local
+  dsn: user:password@tcp(127.0.0.1:3306)/db_name?charset=utf8mb4&parseTime=True&loc=Local
 redis:
   address: 127.0.0.1
   port: 6379
@@ -117,7 +117,7 @@ job:
   backend_dns: 127.0.0.1:6379
   default_queue: default
 mysql:
-  dns: user:password@tcp(127.0.0.1:3306)/db_name?charset=utf8mb4&parseTime=True&loc=Local
+  dsn: user:password@tcp(127.0.0.1:3306)/db_name?charset=utf8mb4&parseTime=True&loc=Local
 redis:
   address: 127.0.0.1
   port: 6379
@@ -138,6 +138,7 @@ chain:
 
 1. RPC Server
 2. Error Code 
-3. Wallet Transfer 
-4. Job Schedule
+3. Transfer 
+4. Schedule
 5. Log
+6. Event Publish & Subscribe

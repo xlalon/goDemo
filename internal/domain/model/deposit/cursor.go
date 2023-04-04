@@ -49,7 +49,7 @@ func NewIncomeCursor(chain string, height int64, address, label, txHash, directi
 	if err := cursor.SetTxHash(txHash); err != nil {
 		return nil
 	}
-	if address != "" || label != "" || direction != "" || index > 0 {
+	if address != "" || label != "" || txHash != "" || direction != "" || index > 0 {
 		if err := cursor.SetAccountIncomeCursor(newAccountIncomeCursor(address, label, txHash, direction, index)); err != nil {
 			return nil
 		}
@@ -63,10 +63,10 @@ func (ic *IncomeCursor) ChainCode() string {
 
 func (ic *IncomeCursor) SetChainCode(chainCode string) error {
 	if ic.chainCode != "" {
-		return ecode.ParameterChangeError
+		return ecode.CursorChange
 	}
 	if chainCode == "" {
-		return ecode.ParameterInvalidError
+		return ecode.CursorInvalid
 	}
 	ic.chainCode = chainCode
 	return nil
@@ -78,7 +78,7 @@ func (ic *IncomeCursor) Height() int64 {
 
 func (ic *IncomeCursor) SetHeight(height int64) error {
 	if height < 0 {
-		return ecode.ParameterInvalidError
+		return ecode.CursorInvalid
 	}
 	ic.height = height
 	return nil

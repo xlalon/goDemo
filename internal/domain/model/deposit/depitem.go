@@ -17,9 +17,9 @@ type Receiver struct {
 }
 
 type Item struct {
-	txnId     TxnId
-	receiver  Receiver
-	coinValue CoinValue
+	txnId      TxnId
+	receiver   Receiver
+	assetValue AssetValue
 }
 
 func NewDepositItem(depositDTO *DepositDTO) *Item {
@@ -92,21 +92,21 @@ func (i *Item) setReceiver(address, memo string) error {
 }
 
 func (i *Item) Asset() string {
-	return i.coinValue.Asset()
+	return i.assetValue.Asset()
 }
 
 func (i *Item) Amount() decimal.Decimal {
-	return i.coinValue.Amount()
+	return i.assetValue.Amount()
 }
 
 func (i *Item) setCoinValue(asset string, amount decimal.Decimal) error {
 	if i.Asset() != "" || i.Amount().GreaterThanZero() {
 		return ecode.DepositCoinValueChange
 	}
-	coinValue := NewCoinValue(asset, amount)
+	coinValue := NewAssetValue(asset, amount)
 	if coinValue == nil {
 		return ecode.DepositCoinValueInvalid
 	}
-	i.coinValue = *coinValue
+	i.assetValue = *coinValue
 	return nil
 }
