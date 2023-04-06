@@ -1,8 +1,10 @@
-package wallet
+package account
 
-import "github.com/xlalon/golee/pkg/database/mysql"
+import (
+	"github.com/xlalon/golee/pkg/database/mysql"
+)
 
-type WalletRepository interface {
+type AccountRepository interface {
 	mysql.IdGeneratorRepository
 
 	Save(acct *Account) error

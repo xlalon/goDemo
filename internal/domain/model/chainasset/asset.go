@@ -183,6 +183,10 @@ func (a *Asset) CalculateAmount(amountRaw decimal.Decimal) decimal.Decimal {
 	return amountRaw.Div(decimal.NewFromInt(10).Pow(decimal.NewFromInt(a.Precession())))
 }
 
+func (a *Asset) CalculateAmountRaw(amount decimal.Decimal) decimal.Decimal {
+	return amount.Mul(decimal.NewFromInt(10).Pow(decimal.NewFromInt(a.Precession())))
+}
+
 func (a *Asset) Offline() {
 	if a.Status() != AssetStatusOffline {
 		_ = a.setStatus(AssetStatusOffline)

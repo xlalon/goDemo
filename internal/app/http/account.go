@@ -6,11 +6,11 @@ import (
 	"github.com/xlalon/golee/pkg/net/http/server"
 )
 
-type walletHandler struct {
+type accountHandler struct {
 	server.Handler
 }
 
-func (ah *walletHandler) newAccount(c *server.Context) {
+func (ah *accountHandler) newAccount(c *server.Context) {
 
 	type UidChain struct {
 		Chain string `json:"chain"`
@@ -21,13 +21,13 @@ func (ah *walletHandler) newAccount(c *server.Context) {
 		fmt.Printf("wrong post data")
 	}
 
-	label := "deposit"
+	label := "DEPOSIT"
 	resp, _ := walletSvc.NewAccount(uc.Chain, label)
 
 	ah.JSON(c, resp)
 }
 
-func (ah *walletHandler) getAccountDetail(c *server.Context) {
+func (ah *accountHandler) getAccountDetail(c *server.Context) {
 
 	chainCode, _ := ah.Query(c, "chain")
 	address := ah.Param(c, "address")
@@ -37,7 +37,7 @@ func (ah *walletHandler) getAccountDetail(c *server.Context) {
 	ah.JSON(c, resp)
 }
 
-func (ah *walletHandler) getAccounts(c *server.Context) {
+func (ah *accountHandler) getAccounts(c *server.Context) {
 
 	chainCode, _ := ah.Query(c, "chain")
 
@@ -46,7 +46,7 @@ func (ah *walletHandler) getAccounts(c *server.Context) {
 	ah.JSON(c, resp)
 }
 
-func (ah *walletHandler) getAccountBalance(c *server.Context) {
+func (ah *accountHandler) getAccountBalance(c *server.Context) {
 
 	chainCode, _ := ah.Query(c, "chain")
 	address := ah.Param(c, "address")

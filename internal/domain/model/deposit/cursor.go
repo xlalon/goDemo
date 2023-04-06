@@ -144,7 +144,7 @@ func (aic *AccountIncomeCursor) Index() int64 {
 
 func (aic *AccountIncomeCursor) SetIndex(index int64) error {
 	if index < 0 {
-		return ecode.ParameterInvalidError
+		return ecode.AccountIndexInvalid
 	}
 	aic.index = index
 	return nil

@@ -1,19 +1,30 @@
-package domain
+package service
 
 import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
 
+	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
 	"github.com/xlalon/golee/internal/onchain"
 )
 
-type Income struct{}
+type Income struct {
+	accountRepository account.AccountRepository
+	chainRepository   chainasset.ChainRepository
+	depositRepository deposit.DepositRepository
+	onChainSvc        *onchain.Service
+}
 
-func NewIncome() *Income {
-	return &Income{}
+func NewIncome(accountRepository account.AccountRepository, chainRepository chainasset.ChainRepository, depositRepository deposit.DepositRepository, onChainSvc *onchain.Service) *Income {
+	return &Income{
+		accountRepository: accountRepository,
+		chainRepository:   chainRepository,
+		depositRepository: depositRepository,
+		onChainSvc:        onChainSvc,
+	}
 }
 
 func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
@@ -46,7 +57,7 @@ func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
 func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error) {
 	var deps []*deposit.Deposit
 
-	cApi, ok := DomainRegistry.OnChainSvc.GetChainApi(cursor.Chain)
+	cApi, ok := i.onChainSvc.GetChainApi(cursor.Chain)
 	if !ok {
 		return deps, fmt.Errorf("chain %s not found", cursor.Chain)
 	}
@@ -56,7 +67,7 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 		return deps, err
 	}
 
-	assets, err := DomainRegistry.ChainRepository.GetChainAssets(chainasset.ChainCode(cursor.Chain))
+	assets, err := i.chainRepository.GetChainAssets(chainasset.ChainCode(cursor.Chain))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +83,7 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 		}
 		amount := asset.CalculateAmount(txn.CoinValue.Amount)
 		depDTO := &deposit.DepositDTO{
-			Id:       DomainRegistry.DepositRepository.NextId(),
+			Id:       i.depositRepository.NextId(),
 			Chain:    string(txn.TxnId.Chain),
 			TxHash:   txn.TxnId.TxHash,
 			VOut:     txn.TxnId.VOut,
@@ -97,8 +108,8 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 
 func (i *Income) filterDeposits(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
 	filters := []Filterer{
-		NewAmountFilter(),
-		NewAccountFilter(),
+		NewAmountFilter(i.chainRepository),
+		NewAccountFilter(i.accountRepository),
 	}
 	result := deps
 	var err error
@@ -114,7 +125,7 @@ func (i *Income) filterDeposits(deps []*deposit.Deposit) ([]*deposit.Deposit, er
 
 func (i *Income) saveDeposits(deps []*deposit.Deposit) error {
 	for _, dep := range deps {
-		if err := DomainRegistry.DepositRepository.Save(dep); err != nil {
+		if err := i.depositRepository.Save(dep); err != nil {
 			return err
 		}
 	}
@@ -123,11 +134,11 @@ func (i *Income) saveDeposits(deps []*deposit.Deposit) error {
 
 func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *onchain.Cursor {
 	address, label := "", onchain.AccountDeposit
-	chainConf, exist := DomainRegistry.OnChainSvc.GetChainConfig(onchain.Code(chainCode))
+	chainConf, exist := i.onChainSvc.GetChainConfig(onchain.Code(chainCode))
 	if exist {
 		address = chainConf.DepositAddress
 	}
-	cursor, err := DomainRegistry.DepositRepository.GetIncomeCursor(string(chainCode), address, string(label))
+	cursor, err := i.depositRepository.GetIncomeCursor(string(chainCode), address, string(label))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			cursor = deposit.NewIncomeCursor(
@@ -153,7 +164,7 @@ func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *onchain.Cursor {
 }
 
 func (i *Income) saveIncomeCursor(onChainCursor *onchain.Cursor) error {
-	return DomainRegistry.DepositRepository.SaveIncomeCursor(
+	return i.depositRepository.SaveIncomeCursor(
 		deposit.NewIncomeCursor(
 			string(onChainCursor.Chain),
 			onChainCursor.Height,

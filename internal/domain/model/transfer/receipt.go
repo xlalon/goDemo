@@ -1,4 +1,4 @@
-package wallet
+package transfer
 
 type TxnStatus string
 

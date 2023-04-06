@@ -1,6 +1,7 @@
-package domain
+package service
 
 import (
+	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
 	"github.com/xlalon/golee/pkg/math/decimal"
@@ -23,10 +24,11 @@ func (f *FilterSpecification) Satisfied(deps []*deposit.Deposit) ([]*deposit.Dep
 
 type AccountFilter struct {
 	FilterSpecification
+	accountRepository account.AccountRepository
 }
 
-func NewAccountFilter() *AccountFilter {
-	return &AccountFilter{}
+func NewAccountFilter(accountRepository account.AccountRepository) *AccountFilter {
+	return &AccountFilter{accountRepository: accountRepository}
 }
 
 func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
@@ -46,15 +48,15 @@ func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit,
 		for address := range addressesM {
 			addresses = append(addresses, address)
 		}
-		accounts, err := DomainRegistry.WalletRepository.GetAccountsByChainAddresses(chainCode, addresses)
+		accounts, err := af.accountRepository.GetAccountsByChainAddresses(chainCode, addresses)
 		if err != nil {
 			return nil, err
 		}
 		if _, ok := chainAddressesSelf[chainCode]; !ok {
 			chainAddressesSelf[chainCode] = make(map[string]bool)
 		}
-		for _, account := range accounts {
-			chainAddressesSelf[chainCode][account.Address()] = true
+		for _, acct := range accounts {
+			chainAddressesSelf[chainCode][acct.Address()] = true
 		}
 	}
 	// filter deps that receiver not our account
@@ -71,17 +73,18 @@ func (af *AccountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit,
 
 type AmountFilter struct {
 	FilterSpecification
+	chainRepository chainasset.ChainRepository
 }
 
-func NewAmountFilter() *AmountFilter {
-	return &AmountFilter{}
+func NewAmountFilter(chainRepository chainasset.ChainRepository) *AmountFilter {
+	return &AmountFilter{chainRepository: chainRepository}
 }
 
 func (af *AmountFilter) Satisfied(deps []*deposit.Deposit) ([]*deposit.Deposit, error) {
 	// filter deps that amount not satisfied
 
 	// retrieve assets from repo
-	assets, err := DomainRegistry.ChainRepository.GetAssets()
+	assets, err := af.chainRepository.GetAssets()
 	if err != nil {
 		return nil, err
 	}

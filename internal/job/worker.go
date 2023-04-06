@@ -3,9 +3,9 @@ package job
 import (
 	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/infra/repository"
+	raccount "github.com/xlalon/golee/internal/infra/repository/account"
 	rchainasset "github.com/xlalon/golee/internal/infra/repository/chainasset"
 	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
-	rwallet "github.com/xlalon/golee/internal/infra/repository/wallet"
 	"github.com/xlalon/golee/internal/job/conf"
 	"github.com/xlalon/golee/internal/job/scheduler/chain"
 	"github.com/xlalon/golee/internal/onchain/x"
@@ -33,12 +33,12 @@ func initDomain(conf *conf.Config) {
 			Mysql: conf.Mysql,
 			Redis: conf.Redis,
 		},
-		Wallet: &rwallet.Config{
+		Account: &raccount.Config{
 			Mysql: conf.Mysql,
 			Redis: conf.Redis,
 		},
 	})
-	domain.Init(_registry.ChainRepository(), _registry.DepositRepository(), _registry.WalletRepository())
+	domain.Init(_registry.ChainRepository(), _registry.DepositRepository(), _registry.AccountRepository())
 }
 
 func initSchedules() {

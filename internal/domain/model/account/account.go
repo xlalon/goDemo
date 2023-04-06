@@ -1,4 +1,4 @@
-package wallet
+package account
 
 import (
 	"github.com/xlalon/golee/internal/domain/model"
@@ -40,7 +40,17 @@ func AccountFactory(acctDTO *AccountDTO) *Account {
 	if err := acct.setSequence(acctDTO.Sequence); err != nil {
 		return nil
 	}
-	if err := acct.setBalances(acctDTO.Balances); err != nil {
+	var balances []*Balance
+	for _, balanceDTO := range acctDTO.Balances {
+		balances = append(balances, &Balance{
+			Asset:      balanceDTO.Asset,
+			Identity:   balanceDTO.Identity,
+			Precession: balanceDTO.Precession,
+			Amount:     balanceDTO.Amount,
+			AmountRaw:  balanceDTO.AmountRaw,
+		})
+	}
+	if err := acct.setBalances(balances); err != nil {
 		return nil
 	}
 	return acct
@@ -52,10 +62,10 @@ func (acct *Account) Chain() string {
 
 func (acct *Account) setChain(chain string) error {
 	if acct.Chain() != "" {
-		return ecode.ParameterChangeError
+		return ecode.AccountChainChange
 	}
 	if chain == "" {
-		return ecode.ParameterNullError
+		return ecode.AccountChainInvalid
 	}
 	acct.chain = chain
 	return nil
@@ -67,10 +77,10 @@ func (acct *Account) Address() string {
 
 func (acct *Account) setAddress(address string) error {
 	if acct.Address() != "" {
-		return ecode.ParameterChangeError
+		return ecode.AccountAddressChange
 	}
 	if address == "" {
-		return ecode.ParameterNullError
+		return ecode.AccountAddressNull
 	}
 	acct.address = address
 	return nil
@@ -82,10 +92,10 @@ func (acct *Account) Label() string {
 
 func (acct *Account) setLabel(label string) error {
 	if acct.Label() != "" {
-		return ecode.ParameterChangeError
+		return ecode.AccountLabelChange
 	}
 	if label == "" {
-		return ecode.ParameterNullError
+		return ecode.AccountLabelNull
 	}
 	acct.label = label
 	return nil
@@ -97,10 +107,7 @@ func (acct *Account) Memo() string {
 
 func (acct *Account) setMemo(memo string) error {
 	if acct.Memo() != "" {
-		return ecode.ParameterChangeError
-	}
-	if memo == "" {
-		return ecode.ParameterNullError
+		return ecode.AccountMemoChange
 	}
 	acct.memo = memo
 	return nil
@@ -112,7 +119,7 @@ func (acct *Account) Status() string {
 
 func (acct *Account) setStatus(status string) error {
 	if status == "" {
-		return ecode.ParameterNullError
+		return ecode.AccountStatusInvalid
 	}
 	acct.status = status
 	return nil
@@ -124,7 +131,7 @@ func (acct *Account) Sequence() int64 {
 
 func (acct *Account) setSequence(sequence int64) error {
 	if sequence < 0 {
-		return ecode.ParameterInvalidError
+		return ecode.AccountSequenceInvalid
 	}
 	acct.sequence = sequence
 	return nil
@@ -140,6 +147,10 @@ func (acct *Account) setBalances(balances []*Balance) error {
 }
 
 func (acct *Account) ToAccountDTO() *AccountDTO {
+	var balances []*BalanceDTO
+	for _, balance := range acct.Balances() {
+		balances = append(balances, balance.ToBalanceDTO())
+	}
 	return &AccountDTO{
 		Id:       acct.Id(),
 		Chain:    acct.Chain(),
@@ -148,6 +159,6 @@ func (acct *Account) ToAccountDTO() *AccountDTO {
 		Memo:     acct.Memo(),
 		Status:   acct.Status(),
 		Sequence: acct.Sequence(),
-		Balances: acct.Balances(),
+		Balances: balances,
 	}
 }

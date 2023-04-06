@@ -1,18 +1,19 @@
-package wallet
+package transfer
 
 import (
+	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
 type Transfer struct {
 	chain                        string
-	fromAccount, receiverAccount *Account
+	fromAccount, receiverAccount *account.Account
 	identity                     string
 	amount                       decimal.Decimal
 	extra                        interface{}
 
-	repo       WalletRepository
+	repo       account.AccountRepository
 	onchainSvc *onchain.Service
 }
 

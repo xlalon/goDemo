@@ -1,9 +1,6 @@
-package wallet
+package account
 
 import (
-	"gorm.io/gorm"
-	"time"
-
 	"github.com/xlalon/golee/pkg/database/mysql"
 )
 
@@ -16,11 +13,4 @@ type Account struct {
 	Memo    string
 	Status  string
 	Version int64
-}
-
-type WalletHistory struct {
-	ID        int64 `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
 }

@@ -1,4 +1,4 @@
-package wallet
+package account
 
 import (
 	xmysql "gorm.io/driver/mysql"

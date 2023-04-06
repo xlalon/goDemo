@@ -5,9 +5,9 @@ import (
 	"github.com/xlalon/golee/internal/app/service"
 	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/infra/repository"
+	raccount "github.com/xlalon/golee/internal/infra/repository/account"
 	rchainasset "github.com/xlalon/golee/internal/infra/repository/chainasset"
 	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
-	rwallet "github.com/xlalon/golee/internal/infra/repository/wallet"
 	"github.com/xlalon/golee/internal/onchain/x"
 	"github.com/xlalon/golee/pkg/net/http/server"
 )
@@ -16,7 +16,7 @@ var (
 	_assetHandler   = &assetHandler{}
 	_chainHandler   = &chainHandler{}
 	_depositHandler = &depositHandler{}
-	_walletHandler  = &walletHandler{}
+	_accountHandler = &accountHandler{}
 )
 
 var (
@@ -49,10 +49,10 @@ func registerRouter(r *server.Engine) {
 	gDeposit.GET("/list", _depositHandler.getDeposits)
 
 	gAccount := v1.Group("account")
-	gAccount.POST("/new", _walletHandler.newAccount)
-	gAccount.GET("/:address/detail", _walletHandler.getAccountDetail)
-	gAccount.GET("/:address/balance", _walletHandler.getAccountBalance)
-	gAccount.GET("/list", _walletHandler.getAccounts)
+	gAccount.POST("/new", _accountHandler.newAccount)
+	gAccount.GET("/:address/detail", _accountHandler.getAccountDetail)
+	gAccount.GET("/:address/balance", _accountHandler.getAccountBalance)
+	gAccount.GET("/list", _accountHandler.getAccounts)
 
 }
 
@@ -66,12 +66,12 @@ func initDomain(conf *conf.Config) {
 			Mysql: conf.Mysql,
 			Redis: conf.Redis,
 		},
-		Wallet: &rwallet.Config{
+		Account: &raccount.Config{
 			Mysql: conf.Mysql,
 			Redis: conf.Redis,
 		},
 	})
-	domain.Init(_registry.ChainRepository(), _registry.DepositRepository(), _registry.WalletRepository())
+	domain.Init(_registry.ChainRepository(), _registry.DepositRepository(), _registry.AccountRepository())
 }
 
 func initServices() {

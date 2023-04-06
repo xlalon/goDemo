@@ -1,13 +1,14 @@
-package domain
+package service
 
 import (
 	"os"
 	"testing"
 
 	"github.com/xlalon/golee/internal/infra/repository"
+	raccount "github.com/xlalon/golee/internal/infra/repository/account"
 	rchainasset "github.com/xlalon/golee/internal/infra/repository/chainasset"
 	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
-	rwallet "github.com/xlalon/golee/internal/infra/repository/wallet"
+	"github.com/xlalon/golee/internal/onchain"
 	onchainConf "github.com/xlalon/golee/internal/onchain/conf"
 	"github.com/xlalon/golee/internal/onchain/x"
 	"github.com/xlalon/golee/pkg/database/mysql"
@@ -33,12 +34,12 @@ var (
 			Mysql: testMysqlConf,
 			Redis: testRedisConf,
 		},
-		Wallet: &rwallet.Config{
+		Account: &raccount.Config{
 			Mysql: testMysqlConf,
 			Redis: testRedisConf,
 		},
 	})
-	testIncome = NewIncome()
+	testIncome = NewIncome(testRepository.AccountRepository(), testRepository.ChainRepository(), testRepository.DepositRepository(), onchain.NewService())
 )
 
 func TestMain(m *testing.M) {
@@ -67,7 +68,6 @@ func TestMain(m *testing.M) {
 			HotAddress:        "",
 		},
 	})
-	Init(testRepository.ChainRepository(), testRepository.DepositRepository(), testRepository.WalletRepository())
 	os.Exit(m.Run())
 }
 
