@@ -10,17 +10,17 @@ type chainHandler struct {
 	server.Handler
 }
 
-func (ch *chainHandler) getLatestHeight(c *server.Context) {
-	chainName := ch.Param(c, "chain")
+func (ch *chainHandler) getLatestHeight(ctx *server.Context) {
+	chainName := ch.Param(ctx, "chain")
 
-	resp, _ := chainSvc.GetChainLatestHeight(strings.ToUpper(chainName))
+	resp, _ := chainSvc.GetChainLatestHeight(ctx, strings.ToUpper(chainName))
 
-	ch.JSON(c, resp)
+	ch.JSON(ctx, resp)
 }
 
-func (ch *chainHandler) getChains(c *server.Context) {
+func (ch *chainHandler) getChains(ctx *server.Context) {
 
 	resp, _ := chainSvc.GetChains()
 
-	ch.JSON(c, resp)
+	ch.JSON(ctx, resp)
 }

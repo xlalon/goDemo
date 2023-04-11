@@ -11,7 +11,7 @@ type Transfer struct {
 	fromAccount, receiverAccount *account.Account
 	identity                     string
 	amount                       decimal.Decimal
-	extra                        interface{}
+	extra                        map[string]interface{}
 
 	repo       account.AccountRepository
 	onchainSvc *onchain.Service

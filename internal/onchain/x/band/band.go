@@ -1,9 +1,9 @@
 package band
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strconv"
 
 	"github.com/xlalon/golee/internal/onchain"
@@ -18,7 +18,7 @@ import (
 type Band struct {
 	*onchain.Chain
 
-	nodeClient *client.RestfulClient
+	nodeClient client.Client
 
 	maxScanHeightRange int64
 }
@@ -30,18 +30,13 @@ func New(conf *conf.ChainConfig) *Band {
 			Config: conf,
 		},
 
-		nodeClient: client.NewRestfulClient(
-			&client.Config{
-				BaseUrl: conf.NodeUrl,
-				Headers: url.Values{"Content-Type": []string{"application/json"}},
-				Timeout: 30,
-			}),
+		nodeClient:         client.NewRestyClient(conf.NodeUrl),
 		maxScanHeightRange: 2,
 	}
 }
 
-func (b *Band) GetLatestHeight() (int64, error) {
-	resp, err := b.nodeClient.Get("/blocks/latest", nil)
+func (b *Band) GetLatestHeight(ctx context.Context) (int64, error) {
+	resp, err := b.nodeClient.Get(ctx, "/blocks/latest", nil)
 	if err != nil {
 		fmt.Println(err)
 		return -1, err
@@ -50,10 +45,10 @@ func (b *Band) GetLatestHeight() (int64, error) {
 	return height.Int(), nil
 }
 
-func (b *Band) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
+func (b *Band) GetTxnByHash(ctx context.Context, txHash string) ([]*onchain.Transaction, error) {
 	var txs []*onchain.Transaction
 
-	resp, err := b.nodeClient.Get(fmt.Sprintf("/cosmos/tx/v1beta1/txs/%s", txHash), nil)
+	resp, err := b.nodeClient.Get(ctx, fmt.Sprintf("/cosmos/tx/v1beta1/txs/%s", txHash), nil)
 	if err != nil {
 		fmt.Println(err)
 		return txs, err
@@ -61,13 +56,13 @@ func (b *Band) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
 
 	txs, _ = b.parseTxResponse(json.JGet(resp, "tx_response").String())
 
-	err = b.updateTxsStatus(txs)
+	err = b.updateTxsStatus(ctx, txs)
 
 	return txs, err
 }
 
-func (b *Band) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
-	latestHeight, err := b.GetLatestHeight()
+func (b *Band) ScanTxn(ctx context.Context, cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+	latestHeight, err := b.GetLatestHeight(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +73,7 @@ func (b *Band) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 	}
 	maxHeight := sort.Min([]int64{latestHeight, cursor.Height + b.maxScanHeightRange})
 	for height := cursor.Height + 1; height < maxHeight+1; height++ {
-		_txs, errScan := b.scanTxnByBlock(height)
+		_txs, errScan := b.scanTxnByBlock(ctx, height)
 		if errScan != nil {
 			return nil, errScan
 		}
@@ -90,16 +85,17 @@ func (b *Band) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 	return txs, nil
 }
 
-func (b *Band) scanTxnByBlock(height int64) ([]*onchain.Transaction, error) {
+func (b *Band) scanTxnByBlock(ctx context.Context, height int64) ([]*onchain.Transaction, error) {
 
 	var txs []*onchain.Transaction
 
-	params := make(url.Values)
-	params.Set("events", fmt.Sprintf("tx.height=%d", height))
-	params.Set("pagination.offset", strconv.Itoa(1))
-	params.Set("pagination.limit", strconv.Itoa(100))
+	params := map[string]string{
+		"events":            fmt.Sprintf("tx.height=%d", height),
+		"pagination.offset": strconv.Itoa(1),
+		"pagination.limit":  strconv.Itoa(100),
+	}
 
-	resp, err := b.nodeClient.Get("/cosmos/tx/v1beta1/txs", params)
+	resp, err := b.nodeClient.Get(ctx, "/cosmos/tx/v1beta1/txs", params)
 	if err != nil {
 		return txs, err
 	}
@@ -112,7 +108,8 @@ func (b *Band) scanTxnByBlock(height int64) ([]*onchain.Transaction, error) {
 	return txs, nil
 }
 
-func (b *Band) NewAccount(label onchain.Label) (*onchain.Account, error) {
+func (b *Band) NewAccount(ctx context.Context, label onchain.Label) (*onchain.Account, error) {
+	_ = ctx
 	account := &onchain.Account{}
 	if label == onchain.AccountDeposit {
 		account = &onchain.Account{
@@ -131,55 +128,47 @@ func (b *Band) NewAccount(label onchain.Label) (*onchain.Account, error) {
 	return account, nil
 }
 
-func (b *Band) GetAccount(address string) (*onchain.Account, error) {
-
-	// balance info
-	reqBalanceUrl := fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", address)
-	respBalance, err := b.nodeClient.Get(reqBalanceUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-	var balances []*onchain.Balance
-	for _, balanceInfo := range json.JGet(respBalance, "balances").Array() {
-		balanceInfoStr := balanceInfo.String()
-		amount := decimal.Decimal{}
-		amount, err = decimal.NewFromString(json.JGet(balanceInfoStr, "amount").String())
-		if err != nil {
-			return nil, err
-		}
-		balances = append(balances, &onchain.Balance{
-			Identity: json.JGet(balanceInfoStr, "denom").String(),
-			Amount:   amount,
-		})
-	}
+func (b *Band) GetAccount(ctx context.Context, address string) (*onchain.Account, error) {
 	// sequence info
-	reqAccountUrl := fmt.Sprintf("/cosmos/auth/v1beta1/accounts/%s", address)
-	respAccount, err := b.nodeClient.Get(reqAccountUrl, nil)
+	url := fmt.Sprintf("/cosmos/auth/v1beta1/accounts/%s", address)
+	resp, err := b.nodeClient.Get(ctx, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	sequence := json.JGet(respAccount, "account.sequence").Int()
-	if err != nil {
-		return nil, err
-	}
-
+	sequence := json.JGet(resp, "account.sequence").Int()
 	account := &onchain.Account{
 		Chain:    b.Code,
 		Address:  address,
 		Label:    onchain.AccountUnknown,
 		Sequence: sequence,
-		Balance:  balances,
 	}
 
 	return account, nil
 }
 
-func (b *Band) EstimateFee(reqData *onchain.TransferDTO) (*onchain.Fee, error) {
+func (b *Band) GetBalance(ctx context.Context, account *onchain.Account, identity string) (decimal.Decimal, error) {
+	zero := decimal.Zero()
+	url := fmt.Sprintf("/cosmos/bank/v1beta1/balances/%s", account.Address)
+	resp, err := b.nodeClient.Get(ctx, url, nil)
+	if err != nil {
+		return zero, err
+	}
+	for _, balances := range json.JGet(resp, "balances").Array() {
+		if json.JGet(balances.String(), "denom").String() == identity {
+			return decimal.NewFromString(json.JGet(balances.String(), "amount").String())
+		}
+	}
+	return zero, errors.New("identity not found")
+}
+
+func (b *Band) EstimateFee(ctx context.Context, reqData *onchain.TransferCommand) (*onchain.Fee, error) {
+	_ = ctx
 	_ = reqData
 	return &onchain.Fee{}, nil
 }
 
-func (b *Band) Transfer(reqData *onchain.TransferDTO) (*onchain.Receipt, error) {
+func (b *Band) Transfer(ctx context.Context, reqData *onchain.TransferCommand) (*onchain.Receipt, error) {
+	_ = ctx
 	_ = reqData
 	return &onchain.Receipt{}, nil
 }
@@ -240,8 +229,8 @@ func (b *Band) parseTxResponse(txResponse string) ([]*onchain.Transaction, error
 	return txs, nil
 }
 
-func (b *Band) updateTxsStatus(txs []*onchain.Transaction) error {
-	latestHeight, _ := b.GetLatestHeight()
+func (b *Band) updateTxsStatus(ctx context.Context, txs []*onchain.Transaction) error {
+	latestHeight, _ := b.GetLatestHeight(ctx)
 	for _, txn := range txs {
 		if txn.Status.Result == onchain.TxnFailed {
 			continue

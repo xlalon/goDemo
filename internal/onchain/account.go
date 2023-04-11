@@ -20,7 +20,7 @@ type Account struct {
 
 	Balance []*Balance `json:"balance"`
 	// uncommon information
-	Extra interface{}
+	Extra map[string]interface{}
 }
 
 type Balance struct {

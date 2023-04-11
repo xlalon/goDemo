@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
@@ -27,13 +28,13 @@ func NewIncome(accountRepository account.AccountRepository, chainRepository chai
 	}
 }
 
-func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
+func (i *Income) ScanDeposits(ctx context.Context, chainCode chainasset.ChainCode) error {
 
 	var deps []*deposit.Deposit
 
 	cursor := i.incomeCursor(chainCode)
 
-	deps, err := i.scanDeposits(cursor)
+	deps, err := i.scanDeposits(ctx, cursor)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (i *Income) ScanDeposits(chainCode chainasset.ChainCode) error {
 	return nil
 }
 
-func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error) {
+func (i *Income) scanDeposits(ctx context.Context, cursor *onchain.Cursor) ([]*deposit.Deposit, error) {
 	var deps []*deposit.Deposit
 
 	cApi, ok := i.onChainSvc.GetChainApi(cursor.Chain)
@@ -62,7 +63,7 @@ func (i *Income) scanDeposits(cursor *onchain.Cursor) ([]*deposit.Deposit, error
 		return deps, fmt.Errorf("chain %s not found", cursor.Chain)
 	}
 
-	txs, err := cApi.ScanTxn(cursor)
+	txs, err := cApi.ScanTxn(ctx, cursor)
 	if err != nil || len(txs) == 0 {
 		return deps, err
 	}

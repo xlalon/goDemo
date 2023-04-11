@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/pkg/database/mysql"
+	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
 type WalletService struct {
@@ -15,9 +17,9 @@ func NewWalletService() *WalletService {
 	return &WalletService{Service{DomainRegistry: domain.DomainRegistry}}
 }
 
-func (s *WalletService) NewAccount(chain, label string) (*account.AccountDTO, error) {
+func (s *WalletService) NewAccount(ctx context.Context, chain, label string) (*account.AccountDTO, error) {
 	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chain))
-	acctNew, err := chainRpc.NewAccount(onchain.Label(label))
+	acctNew, err := chainRpc.NewAccount(ctx, onchain.Label(label))
 	if err != nil || acctNew == nil {
 		return nil, err
 	}
@@ -42,16 +44,12 @@ func (s *WalletService) NewAccount(chain, label string) (*account.AccountDTO, er
 	return acctDM.ToAccountDTO(), nil
 }
 
-func (s *WalletService) GetAccount(chain, address string) (*account.AccountDTO, error) {
-	return s.DomainRegistry.AccountSvc.GetAccount(chain, address)
+func (s *WalletService) GetAccountDetail(ctx context.Context, chain, address string, withBalances bool) (*account.AccountDTO, error) {
+	return s.DomainRegistry.AccountSvc.GetAccountDetail(ctx, chain, address, withBalances)
 }
 
-func (s *WalletService) GetAccountBalance(chain, address string) ([]*account.BalanceDTO, error) {
-	acct, err := s.GetAccount(chain, address)
-	if err != nil {
-		return nil, err
-	}
-	return acct.Balances, nil
+func (s *WalletService) GetAccountBalance(ctx context.Context, chainCode, address, assetCode string) (decimal.Decimal, error) {
+	return s.DomainRegistry.AccountSvc.GetAccountBalance(ctx, chainCode, address, assetCode)
 }
 
 func (s *WalletService) GetAccountsByChain(chain string) ([]*account.AccountDTO, error) {

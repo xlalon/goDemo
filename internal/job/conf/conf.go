@@ -25,7 +25,7 @@ func Init() error {
 
 	Conf, err = fromFile(confPath)
 
-	json.PPrint("Config", Conf)
+	json.JPrint("Config", Conf)
 
 	return err
 }

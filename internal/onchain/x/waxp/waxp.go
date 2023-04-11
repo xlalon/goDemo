@@ -1,8 +1,10 @@
 package waxp
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/xlalon/golee/internal/onchain"
@@ -16,7 +18,7 @@ import (
 type Waxp struct {
 	*onchain.Chain
 
-	nodeClient   *client.RestfulClient
+	nodeClient   client.Client
 	mainContract string
 }
 
@@ -27,16 +29,14 @@ func New(conf *conf.ChainConfig) *Waxp {
 			Config: conf,
 		},
 
-		nodeClient: client.NewRestfulClient(&client.Config{
-			BaseUrl: conf.NodeUrl,
-		}),
+		nodeClient: client.NewRestClient(conf.NodeUrl),
 
 		mainContract: "eosio.token",
 	}
 }
 
-func (w *Waxp) GetLatestHeight() (int64, error) {
-	resp, err := w.nodeClient.Post("/v1/chain/get_info", nil)
+func (w *Waxp) GetLatestHeight(ctx context.Context) (int64, error) {
+	resp, err := w.nodeClient.Post(ctx, "/v1/chain/get_info", nil)
 	if err != nil {
 		fmt.Println(err)
 		return -1, err
@@ -45,12 +45,11 @@ func (w *Waxp) GetLatestHeight() (int64, error) {
 	return height.Int(), nil
 }
 
-func (w *Waxp) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
+func (w *Waxp) GetTxnByHash(ctx context.Context, txHash string) ([]*onchain.Transaction, error) {
 	var txs []*onchain.Transaction
-	json_ := map[string]interface{}{"id": txHash}
-	resp, err := w.nodeClient.Post("/v1/history/get_transaction", json_)
+	params := map[string]string{"id": txHash}
+	resp, err := w.nodeClient.Get(ctx, "/v2/history/get_transaction", params)
 	if err != nil {
-		fmt.Println(err)
 		return txs, err
 	}
 
@@ -59,13 +58,13 @@ func (w *Waxp) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
 		return txs, err
 	}
 
-	err = w.updateTxsStatus(txs)
+	err = w.updateTxsStatus(ctx, txs)
 
 	return txs, err
 }
 
-func (w *Waxp) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
-	txs, err := w.scanTxnByAccount(cursor)
+func (w *Waxp) ScanTxn(ctx context.Context, cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+	txs, err := w.scanTxnByAccount(ctx, cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -75,32 +74,23 @@ func (w *Waxp) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 	return txs, nil
 }
 
-func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+func (w *Waxp) scanTxnByAccount(ctx context.Context, cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 
 	var txs []*onchain.Transaction
 
-	data := map[string]interface{}{
-		"account_name": cursor.Account.Address,
-		"pos":          cursor.Index,
-		"offset":       -10,
+	params := map[string]string{
+		"account": cursor.Account.Address,
+		"skip":    strconv.Itoa(0),
+		"limit":   strconv.Itoa(10),
 	}
-	resp, err := w.nodeClient.Post("/v1/history/get_actions", data)
+	resp, err := w.nodeClient.Get(ctx, "/v2/history/get_actions", params)
 	if err != nil {
-		fmt.Println(err)
 		return txs, err
 	}
 
 	actionsArray := json.JGet(resp, "actions").Array()
-	for _, actionRaw := range actionsArray {
-		action := actionRaw.String()
-		if json.JGet(action, "action_trace.action_ordinal").Int() < 3 {
-			continue
-		}
-		height := json.JGet(action, "block_num").Int()
-		txHash := json.JGet(action, "action_trace.trx_id").String()
-		if txn, errParsed := w.parseAct(json.JGet(action, "action_trace.act").String()); txn != nil && errParsed == nil && txn.CoinValue.Amount.GreaterThan(decimal.NewFromInt(0)) && txn.Receiver.Address == cursor.Account.Address {
-			txn.TxnId.TxHash = txHash
-			txn.Height = height
+	for _, action := range actionsArray {
+		if txn, errParsed := w.parseAct(action.String()); txn != nil && errParsed == nil && txn.Receiver.Address == cursor.Account.Address {
 			txs = append(txs, txn)
 		}
 	}
@@ -110,7 +100,8 @@ func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction,
 	return txs, nil
 }
 
-func (w *Waxp) NewAccount(label onchain.Label) (*onchain.Account, error) {
+func (w *Waxp) NewAccount(ctx context.Context, label onchain.Label) (*onchain.Account, error) {
+	_ = ctx
 	account := &onchain.Account{}
 	if label == onchain.AccountDeposit {
 		account = &onchain.Account{
@@ -129,17 +120,44 @@ func (w *Waxp) NewAccount(label onchain.Label) (*onchain.Account, error) {
 	return account, nil
 }
 
-func (w *Waxp) GetAccount(address string) (*onchain.Account, error) {
-	_ = address
-	return &onchain.Account{}, nil
+func (w *Waxp) GetAccount(ctx context.Context, address string) (*onchain.Account, error) {
+	_ = ctx
+	account := &onchain.Account{
+		Chain:   w.Code,
+		Address: address,
+		Label:   onchain.AccountUnknown,
+	}
+	return account, nil
 }
 
-func (w *Waxp) EstimateFee(reqData *onchain.TransferDTO) (*onchain.Fee, error) {
+func (w *Waxp) GetBalance(ctx context.Context, account *onchain.Account, identity string) (decimal.Decimal, error) {
+	zero := decimal.Zero()
+	params := map[string]interface{}{
+		"account": account.Address,
+		"code":    w.mainContract,
+		"symbol":  identity,
+	}
+	resp, err := w.nodeClient.Post(ctx, "/v1/chain/get_currency_balance", params)
+	if err != nil {
+		return zero, err
+	}
+	for _, balance := range json.JParse(resp).Array() {
+		if balancesInfo := strings.Split(balance.String(), identity); len(balancesInfo) > 1 {
+			return decimal.NewFromString(strings.TrimSpace(balancesInfo[0]))
+		}
+	}
+	return zero, errors.New("identity not found")
+
+}
+
+func (w *Waxp) EstimateFee(ctx context.Context, reqData *onchain.TransferCommand) (*onchain.Fee, error) {
+	_ = ctx
 	_ = reqData
 	return &onchain.Fee{}, nil
 }
 
-func (w *Waxp) Transfer(reqData *onchain.TransferDTO) (*onchain.Receipt, error) {
+func (w *Waxp) Transfer(ctx context.Context, reqData *onchain.TransferCommand) (*onchain.Receipt, error) {
+	_ = ctx
 	_ = reqData
 	return &onchain.Receipt{}, nil
 }
@@ -148,37 +166,33 @@ func (w *Waxp) parseTxResponse(txResponse string) ([]*onchain.Transaction, error
 
 	var txs []*onchain.Transaction
 
-	receipt := json.JGet(txResponse, "trx.receipt").String()
-	if status := json.JGet(receipt, "status"); status.String() != "executed" {
-		return txs, fmt.Errorf("tx status not right, expect %s, got %s", "executed", status.String())
+	executed := json.JGet(txResponse, "executed").Bool()
+	if !executed {
+		return txs, fmt.Errorf("tx not executed")
 	}
-	height := json.JGet(txResponse, "block_num").Int()
-	txHash := json.JGet(txResponse, "id").String()
-	actions := json.JGet(txResponse, "trx.trx.actions")
+	actions := json.JGet(txResponse, "actions")
 	for _, actionRaw := range actions.Array() {
-		action := actionRaw.String()
-		if txn, _ := w.parseAct(action); txn != nil && txn.CoinValue.Amount.GreaterThan(decimal.NewFromInt(0)) {
-			txn.TxnId.TxHash = txHash
-			txn.Height = height
+		if txn, _ := w.parseAct(actionRaw.String()); txn != nil && txn.CoinValue.Amount.GreaterThan(decimal.NewFromInt(0)) {
 			txs = append(txs, txn)
 		}
 	}
 	return txs, nil
 }
 
-func (w *Waxp) parseAct(act string) (*onchain.Transaction, error) {
+func (w *Waxp) parseAct(action string) (*onchain.Transaction, error) {
 
-	if json.JGet(act, "account").String() != w.mainContract || json.JGet(act, "name").String() != "transfer" {
+	if json.JGet(action, "act.account").String() != w.mainContract || json.JGet(action, "act.name").String() != "transfer" {
 		return nil, errors.New("parse failed")
 	}
 
-	data := json.JGet(act, "data").String()
-	amountInfo := strings.Split(json.JGet(data, "quantity").String(), " ")
-	if len(amountInfo) < 2 {
-		return nil, errors.New("amount info parse failed")
-	}
-	amount, _ := decimal.NewFromString(amountInfo[0])
-	if amount.LessThanOrEqual(decimal.NewFromInt(0)) {
+	txHash := json.JGet(action, "trx_id").String()
+	height := json.JGet(action, "block_num").Int()
+
+	data := json.JGet(action, "act.data").String()
+
+	identity := json.JGet(data, "symbol").String()
+	amount := decimal.NewFromFloat(json.JGet(data, "amount").Float())
+	if !amount.GreaterThanZero() {
 		return nil, errors.New("amount less than or equal 0")
 	}
 	receiver := json.JGet(data, "to").String()
@@ -192,7 +206,7 @@ func (w *Waxp) parseAct(act string) (*onchain.Transaction, error) {
 	txn := &onchain.Transaction{
 		TxnId: onchain.TxnId{
 			Chain:  w.Code,
-			TxHash: "",
+			TxHash: txHash,
 			VOut:   0,
 		},
 		Receiver: onchain.Receiver{
@@ -200,18 +214,19 @@ func (w *Waxp) parseAct(act string) (*onchain.Transaction, error) {
 			Memo:    memo,
 		},
 		CoinValue: onchain.CoinValue{
-			Identity: amountInfo[1],
+			Identity: identity,
 			Amount:   amount,
 		},
 		Sender: sender,
+		Height: height,
 		Status: onchain.TxnStatus{Result: onchain.TxnPending},
 	}
 
 	return txn, nil
 }
 
-func (w *Waxp) updateTxsStatus(txs []*onchain.Transaction) error {
-	latestHeight, _ := w.GetLatestHeight()
+func (w *Waxp) updateTxsStatus(ctx context.Context, txs []*onchain.Transaction) error {
+	latestHeight, _ := w.GetLatestHeight(ctx)
 	for _, txn := range txs {
 		if txn.Status.Result == onchain.TxnFailed {
 			continue

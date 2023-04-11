@@ -1,10 +1,11 @@
 package band
 
 import (
+	"context"
 	"fmt"
-	"github.com/xlalon/golee/internal/onchain"
 	"testing"
 
+	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/internal/onchain/conf"
 	"github.com/xlalon/golee/pkg/json"
 )
@@ -28,51 +29,60 @@ var (
 )
 
 func TestBand_GetLatestHeight(t *testing.T) {
-	height, err := testBand.GetLatestHeight()
+	height, err := testBand.GetLatestHeight(context.Background())
 	if err != nil {
-		fmt.Println("error:", err)
+		t.Fatal("Band_GetLatestHeight error:", err)
 	}
 	fmt.Println("band height:", height)
 }
 
 func TestBand_GetTxnByHash(t *testing.T) {
-	tx, err := testBand.GetTxnByHash("AE4CBD3ED9BD7A7CFDF532D8C241194CB15407D93DB0C35FAFA26A0DF3795AC7")
+	tx, err := testBand.GetTxnByHash(context.Background(), "AE4CBD3ED9BD7A7CFDF532D8C241194CB15407D93DB0C35FAFA26A0DF3795AC7")
 	if err != nil {
-		fmt.Println("error:", err)
+		t.Fatal("Band_GetTxnByHash error:", err)
 	}
-	json.PPrint("band tx info:", tx)
+	json.JPrint("band tx info", tx)
 }
 
 func TestBand_ScanTxn(t *testing.T) {
 	cursor := onchain.NewCursor(
 		"BAND", 15663667, testBandChainConf.DepositAddress, onchain.AccountDeposit, "", onchain.CursorDirectionAsc, 0)
-	txs, err := testBand.ScanTxn(cursor)
+	txs, err := testBand.ScanTxn(context.Background(), cursor)
 	if err != nil {
-		fmt.Println("error:", err)
+		t.Fatal("Band_ScanTxn error:", err)
 	}
-	json.PPrint("band txs:", txs)
+	json.JPrint("band txs", txs)
 }
 
 func TestBand_NewAccount(t *testing.T) {
-	acctDeposit, err := testBand.NewAccount("deposit")
+	ctx := context.Background()
+	acctDeposit, err := testBand.NewAccount(ctx, onchain.AccountDeposit)
 	if err != nil {
-		fmt.Println("error:", err)
+		t.Fatal("Band_NewAccount error:", err)
 	}
-	json.PPrint("band new deposit account", acctDeposit)
+	json.JPrint("band new deposit account", acctDeposit)
 
-	acctHot, err := testBand.NewAccount("hot")
+	acctHot, err := testBand.NewAccount(ctx, onchain.AccountHot)
 	if err != nil {
-		fmt.Println("error:", err)
+		t.Fatal("Band_NewAccount error:", err)
 	}
-	json.PPrint("band new hot account", acctHot)
+	json.JPrint("band new hot account", acctHot)
 }
 
 func TestBand_GetAccount(t *testing.T) {
-	acct, err := testBand.GetAccount(testBandChainConf.DepositAddress)
+	acct, err := testBand.GetAccount(context.Background(), testBandChainConf.DepositAddress)
 	if err != nil {
-		fmt.Println("error:", err)
+		t.Fatal("Band_GetAccount error:", err)
 	}
-	json.PPrint("band get account:", acct)
+	json.JPrint("band get account", acct)
+}
+
+func TestBand_GetBalance(t *testing.T) {
+	balance, err := testBand.GetBalance(context.Background(), &onchain.Account{Address: testBandChainConf.DepositAddress}, "uband")
+	if err != nil {
+		t.Fatal("Band_GetBalance error:", err)
+	}
+	json.JPrint("band get balance", balance)
 }
 
 func TestBand_Transfer(t *testing.T) {

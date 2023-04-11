@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"context"
 	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/onchain"
 	"github.com/xlalon/golee/pkg/ecode"
@@ -21,5 +22,5 @@ func (c *Chain) GetHeight(code string) (int64, error) {
 	if !ok {
 		return 0, ecode.ChainNotFound
 	}
-	return cApi.GetLatestHeight()
+	return cApi.GetLatestHeight(context.Background())
 }

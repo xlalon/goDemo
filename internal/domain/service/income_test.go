@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -123,11 +124,11 @@ func TestService_ScanDeposits(t *testing.T) {
 	//			txn.Status()))
 	//	}
 
-	testIncome.ScanDeposits("BAND")
+	testIncome.ScanDeposits(context.Background(), "BAND")
 }
 
 func TestIncome_GetCursor(t *testing.T) {
-	json.PPrint("cursor", testIncome.incomeCursor("BAND"))
+	json.JPrint("cursor", testIncome.incomeCursor("BAND"))
 }
 
 //func TestIncome_SaveCursor(t *testing.T) {

@@ -8,12 +8,16 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+func JParse(json string) gjson.Result {
+	return gjson.Parse(json)
+}
+
 func JGet(json, tag string) gjson.Result {
 	return gjson.Get(json, tag)
 }
 
-// PPrint beautiful print struct
-func PPrint(prefix string, v interface{}) {
+// JPrint beautiful print struct
+func JPrint(prefix string, v interface{}) {
 	vs, _ := json.Marshal(v)
 	var out bytes.Buffer
 	_ = json.Indent(&out, vs, "", "\t")

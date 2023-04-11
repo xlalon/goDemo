@@ -8,9 +8,9 @@ type assetHandler struct {
 	server.Handler
 }
 
-func (ah *assetHandler) getAssets(c *server.Context) {
+func (ah *assetHandler) getAssets(ctx *server.Context) {
 
 	resp, _ := assetSvc.GetAssets()
 
-	ah.JSON(c, resp)
+	ah.JSON(ctx, resp)
 }
