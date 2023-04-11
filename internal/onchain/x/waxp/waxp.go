@@ -1,6 +1,7 @@
 package waxp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,7 +17,7 @@ import (
 type Waxp struct {
 	*onchain.Chain
 
-	nodeClient   *client.RestfulClient
+	nodeClient   client.Client
 	mainContract string
 }
 
@@ -27,16 +28,14 @@ func New(conf *conf.ChainConfig) *Waxp {
 			Config: conf,
 		},
 
-		nodeClient: client.NewRestfulClient(&client.Config{
-			BaseUrl: conf.NodeUrl,
-		}),
+		nodeClient: client.NewRestClient(conf.NodeUrl),
 
 		mainContract: "eosio.token",
 	}
 }
 
-func (w *Waxp) GetLatestHeight() (int64, error) {
-	resp, err := w.nodeClient.Post("/v1/chain/get_info", nil)
+func (w *Waxp) GetLatestHeight(ctx context.Context) (int64, error) {
+	resp, err := w.nodeClient.Post(ctx, "/v1/chain/get_info", nil)
 	if err != nil {
 		fmt.Println(err)
 		return -1, err
@@ -45,10 +44,10 @@ func (w *Waxp) GetLatestHeight() (int64, error) {
 	return height.Int(), nil
 }
 
-func (w *Waxp) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
+func (w *Waxp) GetTxnByHash(ctx context.Context, txHash string) ([]*onchain.Transaction, error) {
 	var txs []*onchain.Transaction
 	json_ := map[string]interface{}{"id": txHash}
-	resp, err := w.nodeClient.Post("/v1/history/get_transaction", json_)
+	resp, err := w.nodeClient.Post(ctx, "/v1/history/get_transaction", json_)
 	if err != nil {
 		fmt.Println(err)
 		return txs, err
@@ -59,13 +58,13 @@ func (w *Waxp) GetTxnByHash(txHash string) ([]*onchain.Transaction, error) {
 		return txs, err
 	}
 
-	err = w.updateTxsStatus(txs)
+	err = w.updateTxsStatus(ctx, txs)
 
 	return txs, err
 }
 
-func (w *Waxp) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
-	txs, err := w.scanTxnByAccount(cursor)
+func (w *Waxp) ScanTxn(ctx context.Context, cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+	txs, err := w.scanTxnByAccount(ctx, cursor)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +74,7 @@ func (w *Waxp) ScanTxn(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 	return txs, nil
 }
 
-func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
+func (w *Waxp) scanTxnByAccount(ctx context.Context, cursor *onchain.Cursor) ([]*onchain.Transaction, error) {
 
 	var txs []*onchain.Transaction
 
@@ -84,7 +83,7 @@ func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction,
 		"pos":          cursor.Index,
 		"offset":       -10,
 	}
-	resp, err := w.nodeClient.Post("/v1/history/get_actions", data)
+	resp, err := w.nodeClient.Post(ctx, "/v1/history/get_actions", data)
 	if err != nil {
 		fmt.Println(err)
 		return txs, err
@@ -110,7 +109,8 @@ func (w *Waxp) scanTxnByAccount(cursor *onchain.Cursor) ([]*onchain.Transaction,
 	return txs, nil
 }
 
-func (w *Waxp) NewAccount(label onchain.Label) (*onchain.Account, error) {
+func (w *Waxp) NewAccount(ctx context.Context, label onchain.Label) (*onchain.Account, error) {
+	_ = ctx
 	account := &onchain.Account{}
 	if label == onchain.AccountDeposit {
 		account = &onchain.Account{
@@ -129,17 +129,20 @@ func (w *Waxp) NewAccount(label onchain.Label) (*onchain.Account, error) {
 	return account, nil
 }
 
-func (w *Waxp) GetAccount(address string) (*onchain.Account, error) {
+func (w *Waxp) GetAccount(ctx context.Context, address string) (*onchain.Account, error) {
+	_ = ctx
 	_ = address
 	return &onchain.Account{}, nil
 }
 
-func (w *Waxp) EstimateFee(reqData *onchain.TransferDTO) (*onchain.Fee, error) {
+func (w *Waxp) EstimateFee(ctx context.Context, reqData *onchain.TransferCommand) (*onchain.Fee, error) {
+	_ = ctx
 	_ = reqData
 	return &onchain.Fee{}, nil
 }
 
-func (w *Waxp) Transfer(reqData *onchain.TransferDTO) (*onchain.Receipt, error) {
+func (w *Waxp) Transfer(ctx context.Context, reqData *onchain.TransferCommand) (*onchain.Receipt, error) {
+	_ = ctx
 	_ = reqData
 	return &onchain.Receipt{}, nil
 }
@@ -210,8 +213,8 @@ func (w *Waxp) parseAct(act string) (*onchain.Transaction, error) {
 	return txn, nil
 }
 
-func (w *Waxp) updateTxsStatus(txs []*onchain.Transaction) error {
-	latestHeight, _ := w.GetLatestHeight()
+func (w *Waxp) updateTxsStatus(ctx context.Context, txs []*onchain.Transaction) error {
+	latestHeight, _ := w.GetLatestHeight(ctx)
 	for _, txn := range txs {
 		if txn.Status.Result == onchain.TxnFailed {
 			continue

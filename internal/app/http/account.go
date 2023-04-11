@@ -10,52 +10,52 @@ type accountHandler struct {
 	server.Handler
 }
 
-func (ah *accountHandler) newAccount(c *server.Context) {
+func (ah *accountHandler) newAccount(ctx *server.Context) {
 
 	type UidChain struct {
 		Chain string `json:"chain"`
 	}
 
 	var uc UidChain
-	if err := ah.BindJSON(c, &uc); err != nil {
+	if err := ah.BindJSON(ctx, &uc); err != nil {
 		fmt.Printf("wrong post data")
 	}
 
 	label := "DEPOSIT"
-	resp, _ := walletSvc.NewAccount(uc.Chain, label)
+	resp, _ := walletSvc.NewAccount(ctx, uc.Chain, label)
 
-	ah.JSON(c, resp)
+	ah.JSON(ctx, resp)
 }
 
-func (ah *accountHandler) getAccountDetail(c *server.Context) {
+func (ah *accountHandler) getAccountDetail(ctx *server.Context) {
 
-	chainCode, _ := ah.Query(c, "chain")
-	address := ah.Param(c, "address")
+	chainCode, _ := ah.Query(ctx, "chain")
+	address := ah.Param(ctx, "address")
 
-	resp, _ := walletSvc.GetAccount(chainCode, address)
+	resp, _ := walletSvc.GetAccount(ctx, chainCode, address)
 
-	ah.JSON(c, resp)
+	ah.JSON(ctx, resp)
 }
 
-func (ah *accountHandler) getAccounts(c *server.Context) {
+func (ah *accountHandler) getAccounts(ctx *server.Context) {
 
-	chainCode, _ := ah.Query(c, "chain")
+	chainCode, _ := ah.Query(ctx, "chain")
 
 	resp, _ := walletSvc.GetAccountsByChain(chainCode)
 
-	ah.JSON(c, resp)
+	ah.JSON(ctx, resp)
 }
 
-func (ah *accountHandler) getAccountBalance(c *server.Context) {
+func (ah *accountHandler) getAccountBalance(ctx *server.Context) {
 
-	chainCode, _ := ah.Query(c, "chain")
-	address := ah.Param(c, "address")
+	chainCode, _ := ah.Query(ctx, "chain")
+	address := ah.Param(ctx, "address")
 
 	if chainCode == "" || address == "" {
-		ah.JSON(c, "bad request query")
+		ah.JSON(ctx, "bad request query")
 	}
 
-	resp, _ := walletSvc.GetAccountBalance(chainCode, address)
+	resp, _ := walletSvc.GetAccountBalance(ctx, chainCode, address)
 
-	ah.JSON(c, resp)
+	ah.JSON(ctx, resp)
 }

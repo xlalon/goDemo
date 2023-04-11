@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/onchain"
@@ -61,14 +62,14 @@ func (s *ChainService) GetChains() (interface{}, error) {
 	return s.chainsToDTOs(s.DomainRegistry.ChainRepository.GetChains())
 }
 
-func (s *ChainService) GetNodeInfo(chainCode string) (interface{}, error) {
+func (s *ChainService) GetNodeInfo(ctx context.Context, chainCode string) (interface{}, error) {
 	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chainCode))
-	return chainRpc.GetNodeInfo()
+	return chainRpc.GetNodeInfo(ctx)
 }
 
-func (s *ChainService) GetChainLatestHeight(chainCode string) (int64, error) {
+func (s *ChainService) GetChainLatestHeight(ctx context.Context, chainCode string) (int64, error) {
 	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chainCode))
-	return chainRpc.GetLatestHeight()
+	return chainRpc.GetLatestHeight(ctx)
 }
 
 func (s *ChainService) chainToDTO(chain *chainasset.Chain, err error) (*chainasset.ChainDTO, error) {

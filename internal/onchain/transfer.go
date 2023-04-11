@@ -46,21 +46,21 @@ type Transaction struct {
 
 type Fee struct {
 	CoinValue CoinValue
-	Gas       int64
 	GasPrice  decimal.Decimal
+	GasLimit  int64
 }
 
 type Receipt struct {
 	TxHash string
-	Fee    Fee
+	Fee    *Fee
 	Status Status
 	ErrLog string
 }
 
-type TransferDTO struct {
-	Sender, Receiver *Account
-	Identity         string
-	Amount           decimal.Decimal
-	Fee              *Fee
-	Extra            interface{}
+type TransferCommand struct {
+	Sender    *Account
+	Receiver  Receiver
+	CoinValue CoinValue
+	Fee       *Fee
+	Extra     map[string]interface{}
 }

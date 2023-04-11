@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/onchain"
@@ -20,13 +21,13 @@ func NewAccountService(accountRepository account.AccountRepository, chainReposit
 	}
 }
 
-func (acct *AccountService) GetAccount(chain, address string) (*account.AccountDTO, error) {
+func (acct *AccountService) GetAccount(ctx context.Context, chain, address string) (*account.AccountDTO, error) {
 	acctDM, err := acct.accountRepository.GetAccountByChainAddress(chain, address)
 	if err != nil {
 		return nil, err
 	}
 	chainRpc, _ := acct.onChainSvc.GetChainApi(onchain.Code(chain))
-	acctOX, err := chainRpc.GetAccount(acctDM.Address())
+	acctOX, err := chainRpc.GetAccount(ctx, acctDM.Address())
 	if err != nil {
 		return nil, err
 	}
