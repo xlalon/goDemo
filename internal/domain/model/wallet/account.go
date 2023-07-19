@@ -1,4 +1,4 @@
-package account
+package wallet
 
 import (
 	"github.com/xlalon/golee/internal/domain/model"
@@ -8,16 +8,16 @@ import (
 type Account struct {
 	model.IdentifiedDomainObject
 
-	chain    string
-	address  string
-	label    string
-	memo     string
-	status   string
-	sequence int64
+	chain string
+
+	address string
+	memo    string
+	status  string
+
 	balances []*Balance
 }
 
-func AccountFactory(acctDTO *AccountDTO) *Account {
+func NewAccount(acctDTO *AccountDTO) *Account {
 	acct := &Account{}
 	if err := acct.SetId(acctDTO.Id); err != nil {
 		return nil
@@ -28,16 +28,10 @@ func AccountFactory(acctDTO *AccountDTO) *Account {
 	if err := acct.setAddress(acctDTO.Address); err != nil {
 		return nil
 	}
-	if err := acct.setLabel(acctDTO.Label); err != nil {
-		return nil
-	}
 	if err := acct.setMemo(acctDTO.Memo); err != nil {
 		return nil
 	}
 	if err := acct.setStatus(acctDTO.Status); err != nil {
-		return nil
-	}
-	if err := acct.setSequence(acctDTO.Sequence); err != nil {
 		return nil
 	}
 	var balances []*Balance
@@ -86,21 +80,6 @@ func (acct *Account) setAddress(address string) error {
 	return nil
 }
 
-func (acct *Account) Label() string {
-	return acct.label
-}
-
-func (acct *Account) setLabel(label string) error {
-	if acct.Label() != "" {
-		return ecode.AccountLabelChange
-	}
-	if label == "" {
-		return ecode.AccountLabelNull
-	}
-	acct.label = label
-	return nil
-}
-
 func (acct *Account) Memo() string {
 	return acct.memo
 }
@@ -125,18 +104,6 @@ func (acct *Account) setStatus(status string) error {
 	return nil
 }
 
-func (acct *Account) Sequence() int64 {
-	return acct.sequence
-}
-
-func (acct *Account) setSequence(sequence int64) error {
-	if sequence < 0 {
-		return ecode.AccountSequenceInvalid
-	}
-	acct.sequence = sequence
-	return nil
-}
-
 func (acct *Account) Balances() []*Balance {
 	return acct.balances
 }
@@ -155,10 +122,8 @@ func (acct *Account) ToAccountDTO() *AccountDTO {
 		Id:       acct.Id(),
 		Chain:    acct.Chain(),
 		Address:  acct.Address(),
-		Label:    acct.Label(),
 		Memo:     acct.Memo(),
 		Status:   acct.Status(),
-		Sequence: acct.Sequence(),
 		Balances: balances,
 	}
 }

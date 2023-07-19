@@ -8,7 +8,7 @@ import (
 	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
 	"github.com/xlalon/golee/internal/job/conf"
 	"github.com/xlalon/golee/internal/job/scheduler/chain"
-	"github.com/xlalon/golee/internal/onchain/x"
+	"github.com/xlalon/golee/internal/xchain/x"
 	"github.com/xlalon/golee/pkg/job/worker"
 )
 

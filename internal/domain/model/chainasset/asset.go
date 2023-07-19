@@ -38,7 +38,7 @@ type Asset struct {
 	setting *AssetSetting
 }
 
-func AssetFactory(assetDTO *AssetDTO) *Asset {
+func NewAsset(assetDTO *AssetDTO) *Asset {
 	asset := &Asset{}
 	if err := asset.SetId(assetDTO.Id); err != nil {
 		return nil

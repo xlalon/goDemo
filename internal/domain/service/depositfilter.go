@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
+	"github.com/xlalon/golee/internal/domain/model/wallet"
 	"github.com/xlalon/golee/pkg/math/decimal"
 )
 
@@ -24,10 +24,10 @@ func (f *FilterSpecification) Satisfied(deps []*deposit.Deposit) ([]*deposit.Dep
 
 type AccountFilter struct {
 	FilterSpecification
-	accountRepository account.AccountRepository
+	accountRepository wallet.AccountRepository
 }
 
-func NewAccountFilter(accountRepository account.AccountRepository) *AccountFilter {
+func NewAccountFilter(accountRepository wallet.AccountRepository) *AccountFilter {
 	return &AccountFilter{accountRepository: accountRepository}
 }
 

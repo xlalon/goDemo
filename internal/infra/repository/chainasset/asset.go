@@ -178,7 +178,7 @@ func (d *Dao) assetDbToDomain(a *Asset, err error) (*chainasset.Asset, error) {
 	if err != nil || a == nil {
 		return nil, err
 	}
-	return chainasset.AssetFactory(
+	return chainasset.NewAsset(
 		&chainasset.AssetDTO{
 			Id:         a.ID,
 			Code:       chainasset.AssetCode(a.Code),

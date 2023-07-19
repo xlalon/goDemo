@@ -8,7 +8,7 @@ import (
 	raccount "github.com/xlalon/golee/internal/infra/repository/account"
 	rchainasset "github.com/xlalon/golee/internal/infra/repository/chainasset"
 	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
-	"github.com/xlalon/golee/internal/onchain/x"
+	"github.com/xlalon/golee/internal/xchain/x"
 	"github.com/xlalon/golee/pkg/net/http/server"
 )
 
@@ -50,7 +50,6 @@ func registerRouter(r *server.Engine) {
 
 	gAccount := v1.Group("account")
 	gAccount.POST("/new", _accountHandler.newAccount)
-	gAccount.GET("/:address/detail", _accountHandler.getAccountDetail)
 	gAccount.GET("/:address/balance", _accountHandler.getAccountBalance)
 	gAccount.GET("/list", _accountHandler.getAccounts)
 

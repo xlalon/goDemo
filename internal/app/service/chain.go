@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/xlalon/golee/internal/domain"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
-	"github.com/xlalon/golee/internal/onchain"
+	"github.com/xlalon/golee/internal/xchain"
 	"github.com/xlalon/golee/pkg/ecode"
 )
 
@@ -18,7 +18,7 @@ func NewChainService() *ChainService {
 
 func (s *ChainService) NewChain(code, name string) (interface{}, error) {
 
-	chain := chainasset.ChainFactory(&chainasset.ChainDTO{
+	chain := chainasset.NewChain(&chainasset.ChainDTO{
 		Id:     s.DomainRegistry.ChainRepository.NextId(),
 		Code:   chainasset.ChainCode(code),
 		Name:   name,
@@ -62,13 +62,13 @@ func (s *ChainService) GetChains() (interface{}, error) {
 	return s.chainsToDTOs(s.DomainRegistry.ChainRepository.GetChains())
 }
 
-func (s *ChainService) GetNodeInfo(ctx context.Context, chainCode string) (interface{}, error) {
-	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chainCode))
-	return chainRpc.GetNodeInfo(ctx)
+func (s *ChainService) GetNodeVersion(ctx context.Context, chainCode string) (interface{}, error) {
+	rpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(xchain.Chain(chainCode))
+	return rpc.GetNodeVersion(ctx)
 }
 
 func (s *ChainService) GetChainLatestHeight(ctx context.Context, chainCode string) (int64, error) {
-	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(onchain.Code(chainCode))
+	chainRpc, _ := s.DomainRegistry.OnChainSvc.GetChainApi(xchain.Chain(chainCode))
 	return chainRpc.GetLatestHeight(ctx)
 }
 

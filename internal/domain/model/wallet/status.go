@@ -1,4 +1,4 @@
-package account
+package wallet
 
 type Status string
 

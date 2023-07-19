@@ -3,7 +3,7 @@ package conf
 import (
 	"flag"
 
-	"github.com/xlalon/golee/internal/onchain/conf"
+	"github.com/xlalon/golee/internal/xchain/conf"
 	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/database/redis"
 	"github.com/xlalon/golee/pkg/job/worker"

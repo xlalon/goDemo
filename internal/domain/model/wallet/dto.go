@@ -1,4 +1,4 @@
-package account
+package wallet
 
 import "github.com/xlalon/golee/pkg/math/decimal"
 
@@ -6,10 +6,8 @@ type AccountDTO struct {
 	Id       int64         `json:"id"`
 	Chain    string        `json:"chain"`
 	Address  string        `json:"address"`
-	Label    string        `json:"label"`
 	Memo     string        `json:"memo"`
 	Status   string        `json:"status"`
-	Sequence int64         `json:"sequence"`
 	Balances []*BalanceDTO `json:"balances"`
 }
 

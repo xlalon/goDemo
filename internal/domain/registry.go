@@ -1,19 +1,19 @@
 package domain
 
 import (
-	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
+	"github.com/xlalon/golee/internal/domain/model/wallet"
 	"github.com/xlalon/golee/internal/domain/service"
-	"github.com/xlalon/golee/internal/onchain"
+	"github.com/xlalon/golee/internal/xchain"
 )
 
 type Registry struct {
-	AccountRepository account.AccountRepository
+	AccountRepository wallet.AccountRepository
 	ChainRepository   chainasset.ChainRepository
 	DepositRepository deposit.DepositRepository
 
-	OnChainSvc *onchain.Service
+	OnChainSvc *xchain.Service
 	AccountSvc *service.AccountService
 	IncomeSvc  *service.Income
 }
@@ -22,8 +22,8 @@ var (
 	DomainRegistry *Registry
 )
 
-func Init(chainRepo chainasset.ChainRepository, depositRepo deposit.DepositRepository, accountRepo account.AccountRepository) {
-	onChainSvc := onchain.NewService()
+func Init(chainRepo chainasset.ChainRepository, depositRepo deposit.DepositRepository, accountRepo wallet.AccountRepository) {
+	onChainSvc := xchain.NewService()
 
 	DomainRegistry = &Registry{
 

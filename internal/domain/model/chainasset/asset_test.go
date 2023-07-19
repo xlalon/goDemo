@@ -6,7 +6,7 @@ import (
 )
 
 func TestAsset_CalculateAmount(t *testing.T) {
-	asset := AssetFactory(&AssetDTO{
+	asset := NewAsset(&AssetDTO{
 		Id:         1,
 		Code:       "BAND",
 		Name:       "BAND",

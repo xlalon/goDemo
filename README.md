@@ -55,7 +55,7 @@
 | domain  | domain      |
 | infra   | infra       |
 | job     | crontab     |
-| onchain | onchain ACL |
+| xchain  | onchain ACL |
 | pkg     | utils       |
 
 

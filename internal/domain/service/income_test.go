@@ -9,9 +9,9 @@ import (
 	raccount "github.com/xlalon/golee/internal/infra/repository/account"
 	rchainasset "github.com/xlalon/golee/internal/infra/repository/chainasset"
 	rdeposit "github.com/xlalon/golee/internal/infra/repository/deposit"
-	"github.com/xlalon/golee/internal/onchain"
-	onchainConf "github.com/xlalon/golee/internal/onchain/conf"
-	"github.com/xlalon/golee/internal/onchain/x"
+	"github.com/xlalon/golee/internal/xchain"
+	onchainConf "github.com/xlalon/golee/internal/xchain/conf"
+	"github.com/xlalon/golee/internal/xchain/x"
 	"github.com/xlalon/golee/pkg/database/mysql"
 	"github.com/xlalon/golee/pkg/database/redis"
 	"github.com/xlalon/golee/pkg/json"
@@ -40,7 +40,7 @@ var (
 			Redis: testRedisConf,
 		},
 	})
-	testIncome = NewIncome(testRepository.AccountRepository(), testRepository.ChainRepository(), testRepository.DepositRepository(), onchain.NewService())
+	testIncome = NewIncome(testRepository.AccountRepository(), testRepository.ChainRepository(), testRepository.DepositRepository(), xchain.NewService())
 )
 
 func TestMain(m *testing.M) {

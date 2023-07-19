@@ -27,17 +27,6 @@ func (ah *accountHandler) newAccount(ctx *server.Context) {
 	ah.JSON(ctx, resp)
 }
 
-func (ah *accountHandler) getAccountDetail(ctx *server.Context) {
-
-	chainCode, _ := ah.Query(ctx, "chain")
-	address := ah.Param(ctx, "address")
-	withBalances, _ := ah.QueryBool(ctx, "withBalances")
-
-	resp, _ := walletSvc.GetAccountDetail(ctx, chainCode, address, withBalances)
-
-	ah.JSON(ctx, resp)
-}
-
 func (ah *accountHandler) getAccounts(ctx *server.Context) {
 
 	chainCode, _ := ah.Query(ctx, "chain")

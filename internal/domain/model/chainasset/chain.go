@@ -31,7 +31,7 @@ type Chain struct {
 	assets []*Asset
 }
 
-func ChainFactory(chainDTO *ChainDTO, assets []*Asset) *Chain {
+func NewChain(chainDTO *ChainDTO, assets []*Asset) *Chain {
 	chain := &Chain{}
 	if err := chain.SetId(chainDTO.Id); err != nil {
 		return nil
@@ -113,7 +113,7 @@ func (c *Chain) RegisterAsset(assetCode AssetCode, assetName, identity string, p
 			return nil, ecode.AssetExist
 		}
 	}
-	asset := AssetFactory(&AssetDTO{
+	asset := NewAsset(&AssetDTO{
 		Id:         c.NextId(),
 		Code:       assetCode,
 		Name:       assetName,

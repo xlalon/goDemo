@@ -4,19 +4,19 @@ import (
 	"fmt"
 
 	"github.com/xlalon/golee/internal/job/task/chain"
-	"github.com/xlalon/golee/internal/onchain"
+	"github.com/xlalon/golee/internal/xchain"
 	"github.com/xlalon/golee/pkg/job/worker"
 )
 
 type Chain struct {
 	chainTask  *chain.Chain
-	onchainSvc *onchain.Service
+	onchainSvc *xchain.Service
 }
 
 func NewChain() *Chain {
 	return &Chain{
 		chainTask:  chain.NewChain(),
-		onchainSvc: onchain.NewService(),
+		onchainSvc: xchain.NewService(),
 	}
 }
 

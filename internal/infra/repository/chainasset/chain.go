@@ -122,7 +122,7 @@ func (d *Dao) chainDbToDomain(c *Chain, assets []*chainasset.Asset) *chainasset.
 	if c == nil {
 		return nil
 	}
-	return chainasset.ChainFactory(
+	return chainasset.NewChain(
 		&chainasset.ChainDTO{
 			Id:     c.ID,
 			Code:   chainasset.ChainCode(c.Code),

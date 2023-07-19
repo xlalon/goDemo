@@ -6,20 +6,20 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 
-	"github.com/xlalon/golee/internal/domain/model/account"
 	"github.com/xlalon/golee/internal/domain/model/chainasset"
 	"github.com/xlalon/golee/internal/domain/model/deposit"
-	"github.com/xlalon/golee/internal/onchain"
+	"github.com/xlalon/golee/internal/domain/model/wallet"
+	"github.com/xlalon/golee/internal/xchain"
 )
 
 type Income struct {
-	accountRepository account.AccountRepository
+	accountRepository wallet.AccountRepository
 	chainRepository   chainasset.ChainRepository
 	depositRepository deposit.DepositRepository
-	onChainSvc        *onchain.Service
+	onChainSvc        *xchain.Service
 }
 
-func NewIncome(accountRepository account.AccountRepository, chainRepository chainasset.ChainRepository, depositRepository deposit.DepositRepository, onChainSvc *onchain.Service) *Income {
+func NewIncome(accountRepository wallet.AccountRepository, chainRepository chainasset.ChainRepository, depositRepository deposit.DepositRepository, onChainSvc *xchain.Service) *Income {
 	return &Income{
 		accountRepository: accountRepository,
 		chainRepository:   chainRepository,
@@ -55,7 +55,7 @@ func (i *Income) ScanDeposits(ctx context.Context, chainCode chainasset.ChainCod
 	return nil
 }
 
-func (i *Income) scanDeposits(ctx context.Context, cursor *onchain.Cursor) ([]*deposit.Deposit, error) {
+func (i *Income) scanDeposits(ctx context.Context, cursor *xchain.Cursor) ([]*deposit.Deposit, error) {
 	var deps []*deposit.Deposit
 
 	cApi, ok := i.onChainSvc.GetChainApi(cursor.Chain)
@@ -63,7 +63,7 @@ func (i *Income) scanDeposits(ctx context.Context, cursor *onchain.Cursor) ([]*d
 		return deps, fmt.Errorf("chain %s not found", cursor.Chain)
 	}
 
-	txs, err := cApi.ScanTxn(ctx, cursor)
+	txs, err := cApi.ScanTransfers(ctx, cursor)
 	if err != nil || len(txs) == 0 {
 		return deps, err
 	}
@@ -78,18 +78,18 @@ func (i *Income) scanDeposits(ctx context.Context, cursor *onchain.Cursor) ([]*d
 	}
 
 	for _, txn := range txs {
-		asset, exist := identity2asset[txn.CoinValue.Identity]
+		asset, exist := identity2asset[string(txn.CoinValue.Identity)]
 		if !exist {
 			continue
 		}
 		amount := asset.CalculateAmount(txn.CoinValue.Amount)
 		depDTO := &deposit.DepositDTO{
 			Id:       i.depositRepository.NextId(),
-			Chain:    string(txn.TxnId.Chain),
-			TxHash:   txn.TxnId.TxHash,
-			VOut:     txn.TxnId.VOut,
-			Receiver: txn.Receiver.Address,
-			Memo:     txn.Receiver.Memo,
+			Chain:    string(txn.Chain),
+			TxHash:   txn.TxHash,
+			VOut:     txn.VOut,
+			Receiver: string(txn.Recipient.Address),
+			Memo:     string(txn.Recipient.Memo),
 			Asset:    string(asset.Code()),
 			Amount:   amount,
 
@@ -133,9 +133,9 @@ func (i *Income) saveDeposits(deps []*deposit.Deposit) error {
 	return nil
 }
 
-func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *onchain.Cursor {
-	address, label := "", onchain.AccountDeposit
-	chainConf, exist := i.onChainSvc.GetChainConfig(onchain.Code(chainCode))
+func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *xchain.Cursor {
+	address, label := "", xchain.WalletLabelDeposit
+	chainConf, exist := i.onChainSvc.GetChainConfig(xchain.Chain(chainCode))
 	if exist {
 		address = chainConf.DepositAddress
 	}
@@ -148,30 +148,29 @@ func (i *Income) incomeCursor(chainCode chainasset.ChainCode) *onchain.Cursor {
 				address,
 				string(label),
 				"",
-				string(onchain.CursorDirectionAsc),
+				"ASC",
 				0)
 		}
 		return nil
 	}
-	return onchain.NewCursor(
-		onchain.Code(chainCode),
+	return xchain.NewCursor(
+		xchain.Chain(chainCode),
 		cursor.Height(),
+		string(xchain.WalletLabelDeposit),
 		cursor.Address(),
-		onchain.Label(cursor.Label()),
 		cursor.TxHash(),
-		onchain.Direction(cursor.Direction()),
 		cursor.Index(),
 	)
 }
 
-func (i *Income) saveIncomeCursor(onChainCursor *onchain.Cursor) error {
+func (i *Income) saveIncomeCursor(onChainCursor *xchain.Cursor) error {
 	return i.depositRepository.SaveIncomeCursor(
 		deposit.NewIncomeCursor(
 			string(onChainCursor.Chain),
 			onChainCursor.Height,
-			onChainCursor.Account.Address,
-			string(onChainCursor.Account.Label),
+			string(onChainCursor.Address),
+			string(onChainCursor.WalletLabel),
 			onChainCursor.TxHash,
-			string(onChainCursor.Direction),
+			"ASC",
 			onChainCursor.Index))
 }
