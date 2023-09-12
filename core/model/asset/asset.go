@@ -1,10 +1,13 @@
 package asset
 
-type Status int64
+import "github.com/xlalon/golee/core/model/chain"
+
+type Status string
 
 const (
-	StatusOffline Status = -1
-	StatusOnline  Status = 0
+	StatusOffline Status = "OFFLINE"
+	StatusOnline  Status = "ONLINE"
+	StatusSuspend Status = "SUSPEND"
 )
 
 type Code string
@@ -12,22 +15,21 @@ type Code string
 type Asset struct {
 	id int64
 
-	code Code
-
-	name string
-
-	status Status
-
-	identity string
+	code      Code
+	name      string
+	status    Status
+	identity  string
+	chainCode chain.Code
 }
 
-func NewAsset(id int64, code Code, name, identity string, status int64) *Asset {
+func NewAsset(id int64, code Code, name, identity, status string, chainCode chain.Code) *Asset {
 	return &Asset{
-		id:       id,
-		code:     code,
-		name:     name,
-		status:   Status(status),
-		identity: identity,
+		id:        id,
+		code:      code,
+		name:      name,
+		status:    Status(status),
+		identity:  identity,
+		chainCode: chainCode,
 	}
 }
 
@@ -63,6 +65,18 @@ func (a *Asset) Online() bool {
 	return false
 }
 
+func (a *Asset) Suspend() bool {
+	if a.status != StatusSuspend {
+		a.status = StatusSuspend
+		return true
+	}
+	return false
+}
+
 func (a *Asset) Identity() string {
 	return a.identity
+}
+
+func (a *Asset) Chain() chain.Code {
+	return a.chainCode
 }

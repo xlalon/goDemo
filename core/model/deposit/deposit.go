@@ -6,12 +6,12 @@ import (
 	"github.com/xlalon/golee/core/model/chain"
 )
 
-type Status int64
+type Status string
 
 const (
-	StatusFailed  Status = -1
-	StatusPending Status = 0
-	StatusSuccess Status = 0
+	StatusFailed  Status = "FAILED"
+	StatusPending Status = "PENDING"
+	StatusSuccess Status = "SUCCESS"
 )
 
 type Deposit struct {
@@ -51,7 +51,7 @@ func NewDeposit(dto *DepositDto) *Deposit {
 		timestamp: dto.Timestamp,
 		height:    dto.Height,
 		comment:   dto.Comment,
-		status:    Status(dto.Status),
+		status:    dto.Status,
 	}
 }
 

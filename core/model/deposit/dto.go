@@ -26,5 +26,5 @@ type DepositDto struct {
 	Height    int64
 	Comment   interface{}
 
-	Status int64
+	Status Status
 }

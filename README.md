@@ -45,27 +45,13 @@
 ```
 
 
-## Contents
-
----
-
-| package | desc        |
-|---------|-------------|
-| app     | application |
-| domain  | domain      |
-| infra   | infra       |
-| job     | crontab     |
-| xchain  | onchain ACL |
-| pkg     | utils       |
-
-
-## Structure
+## Architecture
 
 ---
 
 ```
       -------------------                   ------------------
-      |    Interface    |                   |       Job      |
+      |       Rpc       |                   |       Job      |
       -------------------                   ------------------
          ↑            ↓                        |         ↑
          |          -------------------        |         |
@@ -132,13 +118,3 @@ chain:
     block_time: 1
     irreversible_block: 100
 ```
-
-
-## Undo
-
-1. RPC Server
-2. Error Code 
-3. Transfer 
-4. Schedule
-5. Log
-6. Event Publish & Subscribe

@@ -1,11 +1,11 @@
 package account
 
-type Status int64
+type Status string
 
 const (
-	StatusDeleted    Status = -1
-	StatusActive     Status = 0
-	StatusDeprecated Status = 1
+	StatusDeleted    Status = "DELETED"
+	StatusActive     Status = "ACTIVE"
+	StatusDeprecated Status = "DEPRECATED"
 )
 
 type Account struct {
@@ -17,7 +17,7 @@ type Account struct {
 	status Status
 }
 
-func NewAccount(id int64, address, memo string, status int64) *Account {
+func NewAccount(id int64, address, memo, status string) *Account {
 	return &Account{
 		id:      id,
 		address: address,
