@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/RichardKnop/machinery/v2/brokers/errs"
 	"github.com/RichardKnop/machinery/v2/brokers/iface"
@@ -41,24 +41,44 @@ func NewGR(cnf *config.Config, addrs []string, db int) iface.Broker {
 	b := &BrokerGR{Broker: common.NewBroker(cnf)}
 
 	var password string
+	var username string
 	parts := strings.Split(addrs[0], "@")
-	if len(parts) == 2 {
+	if len(parts) >= 2 {
 		// with password
-		password = parts[0]
-		addrs[0] = parts[1]
+		options := strings.SplitN(strings.Join(parts[:len(parts)-1], "@"), ":", 2)
+		if len(options) >= 2 {
+			username = options[0]
+			password = options[1]
+		} else {
+			password = options[0]
+		}
+
+		addrs[0] = parts[len(parts)-1] // addr is the last one without @
 	}
 
 	ropt := &redis.UniversalOptions{
 		Addrs:    addrs,
 		DB:       db,
 		Password: password,
+		Username: username,
 	}
 	if cnf.Redis != nil {
 		ropt.MasterName = cnf.Redis.MasterName
 	}
+	if cnf.TLSConfig != nil {
+		ropt.TLSConfig = cnf.TLSConfig
+	}
 
-	b.rclient = redis.NewUniversalClient(ropt)
-	if cnf.Redis.DelayedTasksKey != "" {
+	if cnf.Redis != nil && cnf.Redis.SentinelPassword != "" {
+		ropt.SentinelPassword = cnf.Redis.SentinelPassword
+	}
+
+	if cnf.Redis != nil && cnf.Redis.ClusterEnabled {
+		b.rclient = redis.NewClusterClient(ropt.Cluster())
+	} else {
+		b.rclient = redis.NewUniversalClient(ropt)
+	}
+	if cnf.Redis != nil && cnf.Redis.DelayedTasksKey != "" {
 		b.redisDelayedTasksKey = cnf.Redis.DelayedTasksKey
 	} else {
 		b.redisDelayedTasksKey = defaultRedisDelayedTasksKey
@@ -195,7 +215,7 @@ func (b *BrokerGR) Publish(ctx context.Context, signature *tasks.Signature) erro
 
 		if signature.ETA.After(now) {
 			score := signature.ETA.UnixNano()
-			err = b.rclient.ZAdd(context.Background(), b.redisDelayedTasksKey, &redis.Z{Score: float64(score), Member: msg}).Err()
+			err = b.rclient.ZAdd(context.Background(), b.redisDelayedTasksKey, redis.Z{Score: float64(score), Member: msg}).Err()
 			return err
 		}
 	}
@@ -306,6 +326,9 @@ func (b *BrokerGR) consumeOne(delivery []byte, taskProcessor iface.TaskProcessor
 	// If the task is not registered, we requeue it,
 	// there might be different workers for processing specific tasks
 	if !b.IsTaskRegistered(signature.Name) {
+		if signature.IgnoreWhenTaskNotRegistered {
+			return nil
+		}
 		log.INFO.Printf("Task not registered with this worker. Requeuing message: %s", delivery)
 
 		b.rclient.RPush(context.Background(), getQueueGR(b.GetConfig(), taskProcessor), delivery)

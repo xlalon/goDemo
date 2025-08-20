@@ -1,6 +1,6 @@
 # Redsync
 
-[![Build Status](https://travis-ci.org/go-redsync/redsync.svg?branch=master)](https://travis-ci.org/go-redsync/redsync)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-redsync/redsync/v4.svg)](https://pkg.go.dev/github.com/go-redsync/redsync/v4) [![Build Status](https://travis-ci.org/go-redsync/redsync.svg?branch=master)](https://travis-ci.org/go-redsync/redsync) 
 
 Redsync provides a Redis-based distributed mutual exclusion lock implementation for Go as described in [this post](http://redis.io/topics/distlock). A reference library (by [antirez](https://github.com/antirez)) for Ruby is available at [github.com/antirez/redlock-rb](https://github.com/antirez/redlock-rb).
 
@@ -29,9 +29,9 @@ Error handling is simplified to `panic` for shorter example.
 package main
 
 import (
-	goredislib "github.com/go-redis/redis/v8"
+	goredislib "github.com/redis/go-redis/v9"
 	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 )
 
 func main() {
@@ -78,3 +78,12 @@ Redsync is available under the [BSD (3-Clause) License](https://opensource.org/l
 ## Disclaimer
 
 This code implements an algorithm which is currently a proposal, it was not formally analyzed. Make sure to understand how it works before using it in production environments.
+
+## Real World Uses
+
+Below is a list of public, open source projects that use Redsync:
+
+- [Sourcegraph](https://github.com/sourcegraph/sourcegraph): Universal code search and intelligence platform. Uses Redsync in an internal cache implementation.
+- [Open Match](https://github.com/googleforgames/open-match) by Google: Flexible, extensible, and scalable video game matchmaking. Uses Redsync with its state store implementation.
+
+If you are using Redsync in a project please send a pull request to add it to the list.
